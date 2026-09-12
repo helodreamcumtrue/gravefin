@@ -102,34 +102,38 @@ This is an applied systems engineering project focusing on distributed state mac
 To eliminate human subjectivity and prevent platform abuse, all governance is handled via a deterministic matrix:
 \begin{center}
 \small
-\begin{tabularx}{\textwidth}{l p{3.2cm} p{2.4cm} p{1.8cm} l}
+\setlength{\tabcolsep}{4.5pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{>{\raggedright\bfseries}p{4.2cm} >{\raggedright}p{3.8cm} >{\raggedright}p{2.1cm} >{\centering\arraybackslash}p{1.3cm} >{\raggedright\arraybackslash}X}
 \toprule
-\textbf{Trigger Event} & \textbf{Stake Action} & \textbf{Reputation} & \textbf{Strikes} & \textbf{Project State} \\
+\textnormal{\textbf{Trigger Event}} & \textbf{Stake Action} & \textbf{Reputation} & \textbf{Strikes} & \textbf{Project State} \\
 \midrule
-\textbf{Taker ghosts ($>14$d inactive)} & Forfeited $\rightarrow$ Owner & Taker $-20$ & Taker $+1$ & Relisted (\texttt{LISTED}) \\
-\textbf{Owner ghosts (no review $>7$d)} & Refunded to Taker + 100 cr & Owner $-10$ & Owner $+1$ & Marked \texttt{COMPLETED} \\
-\textbf{Taker cancels pre-approval} & None (no stake locked) & Taker $-2$ & --- & Relisted (\texttt{LISTED}) \\
-\textbf{Owner cancels post-approval} & Full refund to Taker & Owner $-5$ & --- & Relisted (\texttt{LISTED}) \\
-\textbf{Milestone missed (1st/2nd)} & Retained in escrow & Taker $-5$ & --- & Remains \texttt{ACTIVE} \\
-\textbf{Repeated Milestone Failure} & Forfeited $\rightarrow$ Owner & Taker $-20$ & Taker $+1$ & Relisted (\texttt{LISTED}) \\
-\textbf{Plagiarism / Bad-Faith Flag} & Forfeited $\rightarrow$ Owner & Taker $-15$ & --- & Relisted (\texttt{LISTED}) \\
-\textbf{Cumulative Strikes $\ge 3$} & Pending stakes cancelled & --- & $\ge 3$ & \textbf{Account Banned} \\
+Taker ghosts ($>14$d inactive)    & Forfeited to Owner   & Taker $-20$ & $+1$ & Relisted (\texttt{LISTED}) \\
+Owner ghosts (no review $>7$d)   & Refunded + 100 cr    & Owner $-10$ & $+1$ & Marked \texttt{COMPLETED} \\
+Taker cancels pre-approval        & None (unlocked)      & Taker $-2$  & ---  & Relisted (\texttt{LISTED}) \\
+Owner cancels post-approval       & Full refund to Taker & Owner $-5$  & ---  & Relisted (\texttt{LISTED}) \\
+Milestone missed (1st/2nd)        & Retained in escrow   & Taker $-5$  & ---  & Remains \texttt{ACTIVE} \\
+Repeated milestone failure        & Forfeited to Owner   & Taker $-20$ & $+1$ & Relisted (\texttt{LISTED}) \\
+Bad-faith / Plagiarism flag       & Forfeited to Owner   & Taker $-15$ & ---  & Relisted (\texttt{LISTED}) \\
+Cumulative strikes $\ge 3$        & All stakes cancelled & ---         & $\ge 3$ & \textbf{Account Banned} \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
 \subsection{Web architecture \hfill \normalfont\small\textit{...web-based solution}}
-A 3-tier architecture with unified dynamic routing:
+A typical 3-tier web architecture with unified dynamic routing:
 \begin{itemize}
     \item \textbf{Frontend:} Responsive UI for repository browsing, claiming, deliverable submission, and live ledger inspection.
-    \item \textbf{Backend API:} Next.js Serverless API endpoints utilizing consolidated catch-all dispatchers (\texttt{/api/auth/[action]}, \texttt{/api/commitments/[...slug]}, \texttt{/api/projects/[...slug]}, \texttt{/api/users/[...slug]}).
+    \item \textbf{Backend API:} Next.js Serverless API endpoints utilizing consolidated catch-all dispatchers (\texttt{/api/auth}, \texttt{/api/commitments}, \texttt{/api/projects}, \texttt{/api/users}).
     \item \textbf{Database:} Prisma ORM connected to Neon Serverless PostgreSQL with connection pooling and relational foreign-key integrity.
 \end{itemize}
 
 \subsection{CI/CD and fast delivery enabler}
+CI/CD will be used to:
 \begin{itemize}
-    \item \textbf{Automated Test Suite:} Single-command unified test runner (\texttt{scripts/test-all.js}) verifying database integrity, protocol transitions, and live HTTP API flows.
-    \item \textbf{Continuous Deployment:} Integrated GitHub Actions and Vercel pipeline producing repeatable staging deployments on every commit.
+    \item Automatically execute the unified test suite (\texttt{scripts/test-all.js}) verifying database integrity, protocol transitions, and live HTTP API flows on every change.
+    \item Produce repeatable deployment artifacts to staging.
+    \item Enable safe, continuous releases to Vercel production with zero downtime.
 \end{itemize}
 
 \section{Evaluation Criterion \hfill \normalfont\small\textit{...measurable and attributable}}
