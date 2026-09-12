@@ -1,5 +1,5 @@
 import prisma from '../../../lib/prisma';
-import { generateAlias, hashPassword, sanitizeUser } from '../../../lib/auth';
+import { generateAlias, hashPassword, sanitizeUser, createSessionToken, serializeSessionCookie } from '../../../lib/auth';
 import { recordLedgerEntry } from '../../../lib/ledger';
 
 export default async function handler(req, res) {
@@ -8,12 +8,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
     if (existing) {
       return res.status(409).json({ error: 'An account with this email already exists' });
     }
@@ -32,7 +42,7 @@ export default async function handler(req, res) {
 
     const user = await prisma.user.create({
       data: {
-        email,
+        email: cleanEmail,
         passwordHash,
         alias,
         credits: initialCredits,
@@ -48,13 +58,21 @@ export default async function handler(req, res) {
       type: 'REWARD_CREDIT',
       amount: initialCredits,
       repDelta: 0,
-      notes: 'Initial onboarding credits grant'
+      notes: 'Initial onboarding credits genesis grant'
     });
 
-    // Set simple cookie
-    res.setHeader('Set-Cookie', `graveyard_user_id=${user.id}; Path=/; HttpOnly; SameSite=Lax`);
+    // Generate cryptographic session token
+    const token = createSessionToken(user.id, user.alias);
+
+    // Set signed cookie
+    res.setHeader('Set-Cookie', [
+      serializeSessionCookie(token),
+      `graveyard_user_id=${user.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`
+    ]);
 
     return res.status(201).json({
+      success: true,
+      token,
       user: sanitizeUser(user, true)
     });
   } catch (err) {

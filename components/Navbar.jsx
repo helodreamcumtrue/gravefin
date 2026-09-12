@@ -6,7 +6,7 @@ import Icon from './Icons';
 
 export default function Navbar() {
   const router = useRouter();
-  const { currentUser, personas, switchPersona } = useApp();
+  const { currentUser, personas, switchPersona, logout } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [personaOpen, setPersonaOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,11 +20,18 @@ export default function Navbar() {
     }
   };
 
+  const handleLogout = async () => {
+    setPersonaOpen(false);
+    setMobileOpen(false);
+    await logout();
+    router.push('/');
+  };
+
   const navLinks = [
     { href: '/browse', label: 'Explore' },
     { href: '/about', label: 'About' },
     { href: '/submit', label: 'Submit' },
-    { href: '/dashboard', label: 'Community' },
+    { href: '/dashboard', label: 'Dashboard & Ledger' },
     { href: '/simulator', label: 'Sandbox' }
   ];
 
@@ -98,9 +105,9 @@ export default function Navbar() {
           </nav>
         </div>
 
-        {/* Right Section: Search Bar & Profile Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Hand-drawn Search Bar from Reference */}
+        {/* Right Section: Search Bar, Profile Dropdown & Auth Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Hand-drawn Search Bar */}
           <form onSubmit={handleSearchSubmit} className="hide-mobile" style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: 11, top: 9, color: 'var(--text-dim)' }}>
               <Icon name="search" size={15} />
@@ -116,7 +123,7 @@ export default function Navbar() {
                 borderRadius: '8px',
                 padding: '7px 12px 7px 32px',
                 fontSize: 13,
-                width: 220,
+                width: 200,
                 outline: 'none',
                 fontFamily: 'inherit',
                 boxShadow: '1px 1.5px 0px rgba(0,0,0,0.15)'
@@ -162,7 +169,7 @@ export default function Navbar() {
                 </span>
               </button>
 
-              {/* Persona Switcher Menu */}
+              {/* Persona Switcher & Profile Dropdown Menu */}
               {personaOpen && (
                 <div
                   className="modal-sketch"
@@ -170,63 +177,161 @@ export default function Navbar() {
                     position: 'absolute',
                     right: 0,
                     top: 44,
-                    width: 280,
+                    width: 300,
                     padding: 16,
                     zIndex: 200,
-                    borderRadius: '16px'
+                    borderRadius: '16px',
+                    background: '#FFFFFF',
+                    border: '2px solid var(--border)',
+                    boxShadow: '3px 4px 0px #141414'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1.5px solid var(--border)', marginBottom: 10 }}>
-                    <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase' }}>
-                      Testing Personas
-                    </span>
-                    <button
-                      onClick={() => setPersonaOpen(false)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
-                    >
-                      <Icon name="close" size={14} />
-                    </button>
+                  {/* Profile Header */}
+                  <div style={{ paddingBottom: 12, borderBottom: '1.5px solid var(--border)', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 15, fontFamily: 'var(--font-display)' }}>
+                          {currentUser.alias}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 2 }}>
+                          {currentUser.email ? (
+                            <span>{currentUser.email} <strong style={{ color: '#1E6B3E' }}>(Private)</strong></span>
+                          ) : (
+                            <span>Anonymous Digger</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setPersonaOpen(false)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
+                      >
+                        <Icon name="close" size={14} />
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                      <div className="surface2" style={{ padding: '4px 8px', borderRadius: '6px', fontSize: 11.5, fontWeight: 700 }}>
+                        💰 {currentUser.credits} Credits
+                      </div>
+                      <div className="surface2" style={{ padding: '4px 8px', borderRadius: '6px', fontSize: 11.5, fontWeight: 700 }}>
+                        ★ {currentUser.reputation} Rep
+                      </div>
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {personas.map(p => {
-                      const isSelected = p.id === currentUser.id;
-                      return (
-                        <div
-                          key={p.id}
-                          onClick={() => {
-                            switchPersona(p.id);
-                            setPersonaOpen(false);
-                          }}
-                          style={{
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            border: isSelected ? '2px solid #141414' : '1px solid var(--border-soft)',
-                            background: isSelected ? '#FAF8F4' : '#FFFFFF',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 13 }}>{p.alias}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                              {p.credits} cr · {p.reputation} rep
-                            </div>
-                          </div>
-                          {isSelected && <span style={{ fontSize: 12, fontWeight: 800 }}>✓</span>}
-                        </div>
-                      );
-                    })}
+                  {/* Navigation Links inside Dropdown */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1.5px dashed var(--border-soft)' }}>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setPersonaOpen(false)}
+                      style={{
+                        padding: '6px 8px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: 'var(--text)',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <span>View My Dashboard & Ledger</span>
+                      <Icon name="arrowRight" size={13} />
+                    </Link>
+                    <Link
+                      href="/submit"
+                      onClick={() => setPersonaOpen(false)}
+                      style={{
+                        padding: '6px 8px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: 'var(--text)',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <span>Submit Abandoned Repo</span>
+                      <Icon name="upload" size={13} />
+                    </Link>
                   </div>
+
+                  {/* Testing Personas Switcher */}
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-dim)', letterSpacing: '0.04em', marginBottom: 8 }}>
+                      Quick-Switch Testing Persona
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 180, overflowY: 'auto' }}>
+                      {personas.map(p => {
+                        const isSelected = p.id === currentUser.id;
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => {
+                              switchPersona(p.id);
+                              setPersonaOpen(false);
+                            }}
+                            style={{
+                              padding: '7px 10px',
+                              borderRadius: '8px',
+                              border: isSelected ? '1.8px solid #141414' : '1px solid var(--border-soft)',
+                              background: isSelected ? '#FAF8F4' : '#FFFFFF',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              transition: 'all 0.1s'
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 12.5 }}>{p.alias}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                                {p.credits} cr · ★ {p.reputation}
+                              </div>
+                            </div>
+                            {isSelected && <span style={{ fontSize: 12, fontWeight: 800 }}>✓</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      background: '#FFF0F0',
+                      border: '1.5px solid #F87171',
+                      borderRadius: '8px',
+                      color: '#B91C1C',
+                      fontWeight: 700,
+                      fontSize: 12.5,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      transition: 'background 0.1s'
+                    }}
+                  >
+                    <Icon name="logOut" size={14} />
+                    <span>Log Out of Session</span>
+                  </button>
                 </div>
               )}
             </div>
           ) : (
-            <Link href="/login" className="btn-sketch btn-sketch-sm">
-              Log In
-            </Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Link href="/login" className="btn-sketch btn-sketch-sm">
+                Log In
+              </Link>
+              <Link href="/signup" className="btn-sketch btn-sketch-sm" style={{ background: '#141414', color: '#FFFFFF' }}>
+                Sign Up
+              </Link>
+            </div>
           )}
 
           {/* Mobile Menu Icon */}
@@ -263,6 +368,36 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10 }}>
+            {currentUser ? (
+              <button
+                onClick={handleLogout}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--error)',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                <Icon name="logOut" size={16} />
+                Log Out ({currentUser.alias})
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Link href="/login" onClick={() => setMobileOpen(false)} className="btn-sketch btn-sketch-sm">
+                  Log In
+                </Link>
+                <Link href="/signup" onClick={() => setMobileOpen(false)} className="btn-sketch btn-sketch-sm" style={{ background: '#141414', color: '#FFFFFF' }}>
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </header>

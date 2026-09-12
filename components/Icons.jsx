@@ -119,7 +119,14 @@ export default function Icon({ name, size = 18, strokeWidth = 2, className = '' 
         <path d="M3 17l9 5 9-5" {...p} />
       </>
     ),
-    star: <path d="M12 2.5l2.9 6.2 6.6.7-5 4.6 1.4 6.6-5.9-3.4-5.9 3.4 1.4-6.6-5-4.6 6.6-.7z" {...p} />
+    star: <path d="M12 2.5l2.9 6.2 6.6.7-5 4.6 1.4 6.6-5.9-3.4-5.9 3.4 1.4-6.6-5-4.6 6.6-.7z" {...p} />,
+    logOut: (
+      <>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" {...p} />
+        <polyline points="16 17 21 12 16 7" {...p} />
+        <line x1="21" y1="12" x2="9" y2="12" {...p} />
+      </>
+    )
   };
 
   return (

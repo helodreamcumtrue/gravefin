@@ -79,6 +79,10 @@ export default function ProjectDetails() {
 
   // 2. Owner approves commitment
   const handleApprove = async () => {
+    if (!currentUser) {
+      addToast('Please log in to approve commitments', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -105,6 +109,10 @@ export default function ProjectDetails() {
 
   // 3. Owner rejects commitment
   const handleReject = async () => {
+    if (!currentUser) {
+      addToast('Please log in first', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -130,6 +138,10 @@ export default function ProjectDetails() {
 
   // 4. Taker withdraws pre-approval
   const handleWithdraw = async () => {
+    if (!currentUser) {
+      addToast('Please log in first', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -152,6 +164,10 @@ export default function ProjectDetails() {
 
   // 5. Taker submits completed work
   const handleSubmitDeliverable = async () => {
+    if (!currentUser) {
+      addToast('Please log in first', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -181,6 +197,10 @@ export default function ProjectDetails() {
 
   // 6. Owner verifies deliverable (approve or flagBadFaith)
   const handleVerify = async (decision) => {
+    if (!currentUser) {
+      addToast('Please log in first', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);

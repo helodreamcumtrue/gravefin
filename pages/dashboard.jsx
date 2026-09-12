@@ -47,11 +47,26 @@ export default function Dashboard() {
 
   if (!currentUser) {
     return (
-      <div className="container" style={{ padding: '80px 0', textAlign: 'center' }}>
-        <h2 className="font-display">Authentication Required</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
-          Please select an active persona from the top navigation to view your dashboard.
-        </p>
+      <div className="container" style={{ padding: '70px 0 90px', maxWidth: 480, textAlign: 'center' }}>
+        <div className="card" style={{ padding: 36, borderRadius: '18px', background: '#FFFFFF', border: '2px solid var(--border)', boxShadow: '3px 4px 0px #141414' }}>
+          <div style={{ width: 48, height: 48, border: '2px solid var(--border)', borderRadius: '12px 12px 6px 6px', background: '#FAF8F4', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, boxShadow: '2px 2px 0px #141414' }}>
+            <Icon name="lock" size={22} />
+          </div>
+          <h2 className="font-display" style={{ fontSize: 26, fontWeight: 800, margin: '0 0 10px' }}>
+            Authentication Required
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '0 0 24px', lineHeight: 1.5 }}>
+            Access to your listed repositories, active escrow stakes, and immutable ledger requires an authenticated session.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Link href="/login" className="btn btn-primary btn-block" style={{ height: 42, borderRadius: '10px', fontSize: 14.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              Log In with Email →
+            </Link>
+            <Link href="/signup" className="btn btn-secondary btn-block" style={{ height: 42, borderRadius: '10px', fontSize: 14.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              Create Anonymous Account
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
