@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "test": "node scripts/test-all.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
