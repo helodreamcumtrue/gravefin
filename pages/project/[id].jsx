@@ -1,0 +1,760 @@
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
+import { useApp } from '../../context/AppContext';
+import EscrowStatusBanner from '../../components/EscrowStatusBanner';
+import MilestoneTracker from '../../components/MilestoneTracker';
+import Icon from '../../components/Icons';
+
+export default function ProjectDetails() {
+  const router = useRouter();
+  const { id } = router.query;
+  const { currentUser, addToast, refreshUser } = useApp();
+
+  const [project, setProject] = useState(null);
+  const [activeCommitment, setActiveCommitment] = useState(null);
+  const [userRole, setUserRole] = useState('GUEST');
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Modals
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [submissionNotes, setSubmissionNotes] = useState('');
+  const [submissionUrl, setSubmissionUrl] = useState('');
+
+  const [flagModalOpen, setFlagModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (id) fetchProjectDetail();
+  }, [id, currentUser]);
+
+  const fetchProjectDetail = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/projects/${id}`, {
+        headers: currentUser ? { 'x-user-id': currentUser.id } : {}
+      });
+      if (!res.ok) throw new Error('Project not found');
+      const data = await res.json();
+      setProject(data.project);
+      setActiveCommitment(data.activeCommitment);
+      setUserRole(data.userRole);
+    } catch (err) {
+      console.error(err);
+      addToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 1. Taker claims project
+  const handleCommit = async () => {
+    if (!currentUser) {
+      addToast('Please select or log in to a persona to claim a project', 'error');
+      return;
+    }
+    if (currentUser.credits < project.stakeRequired) {
+      addToast(`Insufficient credits. Required: ${project.stakeRequired}, Available: ${currentUser.credits}`, 'error');
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const res = await fetch(`/api/projects/${project.id}/commit`, {
+        method: 'POST',
+        headers: { 'x-user-id': currentUser.id }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to claim project');
+
+      addToast('Claim submitted! Awaiting owner approval to lock escrow.', 'success');
+      await fetchProjectDetail();
+      await refreshUser();
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 2. Owner approves commitment
+  const handleApprove = async () => {
+    if (!activeCommitment) return;
+    try {
+      setActionLoading(true);
+      const res = await fetch(`/api/projects/${project.id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id
+        },
+        body: JSON.stringify({ commitmentId: activeCommitment.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to approve commitment');
+
+      addToast(data.message, 'success');
+      await fetchProjectDetail();
+      await refreshUser();
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 3. Owner rejects commitment
+  const handleReject = async () => {
+    if (!activeCommitment) return;
+    try {
+      setActionLoading(true);
+      const res = await fetch(`/api/projects/${project.id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id
+        },
+        body: JSON.stringify({ commitmentId: activeCommitment.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reject commitment');
+
+      addToast(data.message, 'info');
+      await fetchProjectDetail();
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 4. Taker withdraws pre-approval
+  const handleWithdraw = async () => {
+    if (!activeCommitment) return;
+    try {
+      setActionLoading(true);
+      const res = await fetch(`/api/commitments/${activeCommitment.id}/withdraw`, {
+        method: 'POST',
+        headers: { 'x-user-id': currentUser.id }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to withdraw');
+
+      addToast(data.message, 'info');
+      await fetchProjectDetail();
+      await refreshUser();
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 5. Taker submits completed work
+  const handleSubmitDeliverable = async () => {
+    if (!activeCommitment) return;
+    try {
+      setActionLoading(true);
+      const res = await fetch(`/api/commitments/${activeCommitment.id}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id
+        },
+        body: JSON.stringify({
+          notes: submissionNotes,
+          deliverableUrl: submissionUrl
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit deliverable');
+
+      addToast(data.message, 'success');
+      setSubmitModalOpen(false);
+      await fetchProjectDetail();
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 6. Owner verifies deliverable (approve or flagBadFaith)
+  const handleVerify = async (decision) => {
+    if (!activeCommitment) return;
+    try {
+      setActionLoading(true);
+      const res = await fetch(`/api/commitments/${activeCommitment.id}/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id
+        },
+        body: JSON.stringify({ decision })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+      addToast(data.message, decision === 'approve' ? 'success' : 'warning');
+      setFlagModalOpen(false);
+      await fetchProjectDetail();
+      await refreshUser();
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Download project source code
+  const handleDownload = () => {
+    window.open(`/api/projects/${project.id}/download`, '_blank');
+  };
+
+  if (loading) {
+    return (
+      <div className="container" style={{ padding: '60px 0', textAlign: 'center' }}>
+        <div style={{ color: 'var(--text-muted)' }}>Loading codebase details...</div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="container" style={{ padding: '60px 0', textAlign: 'center' }}>
+        <h2>Project not found</h2>
+        <Link href="/browse" className="btn btn-outline" style={{ marginTop: 16 }}>
+          Back to Browse
+        </Link>
+      </div>
+    );
+  }
+
+  let tags = [];
+  try {
+    tags = typeof project.techTags === 'string' ? JSON.parse(project.techTags) : project.techTags || [];
+  } catch (e) {
+    tags = (project.techTags || '').split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  const isOwner = userRole === 'OWNER';
+  const isTaker = userRole === 'TAKER';
+  const isPending = activeCommitment?.status === 'PENDING_APPROVAL';
+  const isActive = activeCommitment?.status === 'ACTIVE';
+  const isSubmitted = activeCommitment?.status === 'SUBMITTED';
+  const isCompleted = project.status === 'COMPLETED';
+
+  return (
+    <div className="container" style={{ padding: '36px 0 70px' }}>
+      {/* Back button */}
+      <Link
+        href="/browse"
+        className="btn btn-outline btn-sm"
+        style={{ marginBottom: 20, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+      >
+        <Icon name="chevronLeft" size={15} /> Back to Graveyard
+      </Link>
+
+      {/* Escrow Pipeline Tracker */}
+      <EscrowStatusBanner
+        status={project.status}
+        activeCommitment={activeCommitment}
+        reviewTimeoutAt={project.reviewTimeoutAt}
+      />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 32, alignItems: 'start' }}>
+        {/* Left Column: Codebase Details */}
+        <div>
+          {/* Hero Dossier Card */}
+          <div
+            className="card"
+            style={{
+              padding: 26,
+              marginBottom: 24,
+              position: 'relative',
+              background: '#FFFFFF'
+            }}
+          >
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+              <span className="chip" style={{ fontSize: 12 }}>
+                <Icon name="tombstone" size={13} /> {project.category}
+              </span>
+              <span className="chip chip-accent" style={{ fontSize: 12 }}>
+                🔒 {project.stakeRequired} credits stake
+              </span>
+              {project.milestoneMode && (
+                <span className="chip chip-teal" style={{ fontSize: 12 }}>
+                  ✓ Milestone Mode
+                </span>
+              )}
+            </div>
+
+            <h1 className="font-display" style={{ fontSize: 28, fontWeight: 800, margin: '0 0 10px', letterSpacing: '-0.03em' }}>
+              {project.title}
+            </h1>
+
+            <div style={{ display: 'flex', gap: 14, fontSize: 13, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+              <span>Listed by <strong>{project.owner?.alias}</strong> ({project.owner?.reputation} rep)</span>
+              <span>·</span>
+              <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+
+          {/* Completion Progress Gauge */}
+          <div
+            className="surface2"
+            style={{
+              padding: 20,
+              marginBottom: 24,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+              border: '2px solid var(--border)',
+              borderRadius: '16px',
+              boxShadow: 'var(--shadow-sketch-sm)'
+            }}
+          >
+            <div
+              style={{
+                width: 66,
+                height: 66,
+                borderRadius: '50%',
+                background: '#FFFFFF',
+                border: '2px solid var(--border)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: 17,
+                color: 'var(--text)',
+                boxShadow: '1.5px 2px 0px #141414',
+                flexShrink: 0
+              }}
+            >
+              <span>{project.completion}%</span>
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14.5, fontFamily: 'var(--font-display)' }}>
+                Scope Completion Estimate
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0', lineHeight: 1.45 }}>
+                Estimated working state of original scope. The anonymous builder must complete all remaining deliverables to successfully release escrow.
+              </p>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div
+            className="card"
+            style={{
+              padding: 24,
+              marginBottom: 24,
+              background: '#FFFFFF'
+            }}
+          >
+            <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', margin: '0 0 12px', color: 'var(--text)' }}>
+              About this codebase
+            </h3>
+            <p style={{ fontSize: 14.5, lineHeight: 1.7, color: 'var(--text-muted)', margin: 0, whiteSpace: 'pre-line' }}>
+              {project.description}
+            </p>
+          </div>
+
+          {/* Tech Stack */}
+          <div
+            className="card"
+            style={{
+              padding: 22,
+              marginBottom: 24,
+              background: '#FFFFFF'
+            }}
+          >
+            <h3 style={{ fontSize: 15, fontWeight: 800, fontFamily: 'var(--font-display)', margin: '0 0 12px', color: 'var(--text)' }}>
+              Technologies & Frameworks
+            </h3>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {tags.map(t => (
+                <span
+                  key={t}
+                  className="tag-sketch"
+                  style={{ fontSize: 12.5, padding: '5px 12px', background: '#F4EFE6' }}
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Milestones Section */}
+          {activeCommitment && activeCommitment.milestones && activeCommitment.milestones.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', margin: 0, color: 'var(--text)' }}>
+                  Milestone Checkpoints
+                </h3>
+                <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 600 }}>
+                  System-tracked milestones
+                </span>
+              </div>
+              <MilestoneTracker
+                commitmentId={activeCommitment.id}
+                milestones={activeCommitment.milestones}
+                isTaker={isTaker}
+                onMilestoneUpdated={fetchProjectDetail}
+              />
+            </div>
+          )}
+
+          {/* Submitted Notes (if SUBMITTED) */}
+          {activeCommitment?.submissionNotes && (
+            <div
+              className="surface2"
+              style={{
+                padding: 20,
+                marginBottom: 24,
+                border: '2px solid var(--border)',
+                borderLeft: '6px solid var(--border)',
+                borderRadius: '12px'
+              }}
+            >
+              <h4 style={{ margin: '0 0 8px', fontSize: 14.5, fontWeight: 800, color: 'var(--text)' }}>
+                Taker Deliverable Notes
+              </h4>
+              <p style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+                {activeCommitment.submissionNotes}
+              </p>
+            </div>
+          )}
+
+          {/* Protocol Guarantee Box */}
+          <div
+            className="card"
+            style={{
+              padding: 22,
+              background: '#F4EFE6',
+              border: '2px solid var(--border)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <Icon name="shield" size={17} />
+              <strong style={{ fontSize: 14.5, fontFamily: 'var(--font-display)' }}>System Enforced Trust Guarantees</strong>
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.65 }}>
+              <li><strong>Zero Exposure:</strong> Neither party ever sees the other's real email, name, or contact details.</li>
+              <li><strong>Ghost Protection:</strong> If the builder stops working for 14 days, their stake is automatically forfeited to the owner and the project relists.</li>
+              <li><strong>Review Protection:</strong> If the owner fails to verify submitted work within 7 days, the system automatically awards the reward to the builder.</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Right Column: Escrow Actions & Role Pane */}
+        <div>
+          {/* Action Card */}
+          <div
+            className="card"
+            style={{
+              padding: 24,
+              position: 'sticky',
+              top: 88,
+              background: '#FFFFFF'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: '1.5px solid var(--border)' }}>
+              <Icon name="lock" size={17} />
+              <h3 className="font-display" style={{ fontSize: 17, fontWeight: 800, margin: 0 }}>
+                Escrow & Claim Actions
+              </h3>
+            </div>
+
+            {/* CASE 1: Current User is OWNER */}
+            {isOwner && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ padding: '10px 12px', background: 'rgba(232,162,74,.1)', borderRadius: 8, fontSize: 13, color: 'var(--accent)' }}>
+                  👑 You own this project.
+                </div>
+
+                {/* A. Pending Commitment waiting for Owner Approval */}
+                {isPending && activeCommitment && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                      <strong>{activeCommitment.taker?.alias}</strong> ({activeCommitment.taker?.reputation} rep) requested to claim this project.
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0 }}>
+                      Approving will lock <strong>{project.stakeRequired} credits</strong> from the taker in escrow and begin the 14-day work timer.
+                    </p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn btn-primary btn-block"
+                        onClick={handleApprove}
+                        disabled={actionLoading}
+                      >
+                        {actionLoading ? 'Approving...' : 'Approve & Lock Stake'}
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={handleReject}
+                        disabled={actionLoading}
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* B. Active work in progress */}
+                {isActive && (
+                  <div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
+                      Taker <strong>{activeCommitment.taker?.alias}</strong> is actively working off-platform.
+                    </div>
+                    <div className="chip chip-accent" style={{ marginBottom: 14 }}>
+                      🔒 {activeCommitment.stakeLocked} credits locked in escrow
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0 }}>
+                      Taker has until {new Date(activeCommitment.ghostDeadlineAt).toLocaleDateString()} to deliver completed code.
+                    </p>
+                  </div>
+                )}
+
+                {/* C. Work Submitted - Owner must verify */}
+                {isSubmitted && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ fontSize: 13, color: 'var(--accent-2)', fontWeight: 600 }}>
+                      🎉 Deliverable ready for your review!
+                    </div>
+                    <button className="btn btn-secondary btn-block" onClick={handleDownload}>
+                      <Icon name="download" size={14} /> Download Deliverable
+                    </button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn btn-primary btn-block"
+                        onClick={() => handleVerify('approve')}
+                        disabled={actionLoading}
+                      >
+                        {actionLoading ? 'Releasing...' : 'Verify & Release (+100 cr)'}
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => setFlagModalOpen(true)}
+                        disabled={actionLoading}
+                      >
+                        Flag Bad-Faith
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* D. Project Completed */}
+                {isCompleted && (
+                  <div style={{ padding: '12px 14px', background: 'rgba(95,179,163,.15)', borderRadius: 10, fontSize: 13, color: 'var(--accent-2)' }}>
+                    <Icon name="check" size={15} /> Project successfully revived and closed.
+                  </div>
+                )}
+
+                {/* E. Listed with no commitments */}
+                {!activeCommitment && (
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                    Your project is listed in Browse and waiting for an anonymous taker to stake credits.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CASE 2: Current User is the TAKER */}
+            {isTaker && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ padding: '10px 12px', background: 'rgba(95,179,163,.12)', borderRadius: 8, fontSize: 13, color: 'var(--accent-2)' }}>
+                  🛠️ You are the committed builder for this codebase.
+                </div>
+
+                {/* A. Pending approval */}
+                {isPending && (
+                  <div>
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+                      Your claim request has been sent to the owner. Once approved, your {project.stakeRequired} credits stake will be locked.
+                    </p>
+                    <button
+                      className="btn btn-outline btn-sm btn-block"
+                      onClick={handleWithdraw}
+                      disabled={actionLoading}
+                    >
+                      Cancel Claim (-2 Rep Penalty)
+                    </button>
+                  </div>
+                )}
+
+                {/* B. Active work phase */}
+                {isActive && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                      Stake locked: <strong>{activeCommitment.stakeLocked} credits</strong>
+                    </div>
+
+                    <button className="btn btn-primary btn-block" onClick={handleDownload}>
+                      <Icon name="download" size={15} /> Download Source Code (.zip)
+                    </button>
+
+                    <button
+                      className="btn btn-teal btn-block"
+                      onClick={() => setSubmitModalOpen(true)}
+                    >
+                      <Icon name="upload" size={15} /> Submit Completed Work
+                    </button>
+
+                    <div style={{ fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
+                      Work is blind and off-platform. Submit when finished to trigger the 7-day review window.
+                    </div>
+                  </div>
+                )}
+
+                {/* C. Submitted */}
+                {isSubmitted && (
+                  <div style={{ padding: '12px', background: 'rgba(232,162,74,.1)', borderRadius: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', marginBottom: 4 }}>
+                      Awaiting Owner Verification
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Your deliverable is under review. If the owner ghosts, your stake will be refunded and your 100 reward credits awarded automatically.
+                    </div>
+                  </div>
+                )}
+
+                {/* D. Completed */}
+                {isCompleted && (
+                  <div style={{ padding: '12px', background: 'rgba(95,179,163,.15)', borderRadius: 10, fontSize: 13, color: 'var(--accent-2)' }}>
+                    🎉 Completed! Your stake has been refunded and 100 reward credits credited to your ledger.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CASE 3: GUEST / UNCOMMITTED USER */}
+            {!isOwner && !isTaker && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {project.status === 'LISTED' ? (
+                  <>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      Claim this abandoned project to finish it off-platform. Upon owner approval, your stake will be held in escrow until verification.
+                    </div>
+
+                    <div className="surface2" style={{ padding: 14, borderRadius: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+                        <span>Required Stake:</span>
+                        <strong style={{ color: 'var(--accent)' }}>{project.stakeRequired} cr</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+                        <span>Completion Reward:</span>
+                        <strong style={{ color: 'var(--accent-2)' }}>+100 cr (+15 rep)</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderTop: '1px solid var(--border)', paddingTop: 6 }}>
+                        <span>Your Balance:</span>
+                        <strong>{currentUser ? currentUser.credits : 0} cr</strong>
+                      </div>
+                    </div>
+
+                    <button
+                      className="btn btn-primary btn-block"
+                      onClick={handleCommit}
+                      disabled={actionLoading || (currentUser && currentUser.credits < project.stakeRequired)}
+                    >
+                      {actionLoading ? 'Claiming...' : `Commit ${project.stakeRequired} Credits Stake`}
+                    </button>
+
+                    {currentUser && currentUser.credits < project.stakeRequired && (
+                      <div style={{ fontSize: 12, color: 'var(--error)', textAlign: 'center' }}>
+                        You need {project.stakeRequired - currentUser.credits} more credits to claim this project.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ padding: '14px', background: 'var(--surface-2)', borderRadius: 10, fontSize: 13, color: 'var(--text-dim)', textAlign: 'center' }}>
+                    This project is currently claimed or in progress by an anonymous taker.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Deliverable Submission Modal */}
+      {submitModalOpen && (
+        <div className="modal-backdrop" onClick={() => setSubmitModalOpen(false)}>
+          <div className="modal-sketch" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h3 className="font-display" style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>
+                Submit Completed Deliverable
+              </h3>
+              <button className="btn-icon btn-ghost" onClick={() => setSubmitModalOpen(false)}>
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginBottom: 18, lineHeight: 1.5 }}>
+              Provide summary notes of what you built, fixed, or tested. The owner will have 7 days to verify.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label className="label">Completion Summary & Verification Notes *</label>
+                <textarea
+                  className="input"
+                  rows={4}
+                  placeholder="Explain the changes made, tests executed, and how to run the completed app..."
+                  value={submissionNotes}
+                  onChange={e => setSubmissionNotes(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="label">Deliverable Archive URL / Path</label>
+                <input
+                  className="input"
+                  placeholder="/downloads/completed_deliverable.zip"
+                  value={submissionUrl}
+                  onChange={e => setSubmissionUrl(e.target.value)}
+                />
+              </div>
+
+              <button
+                className="btn btn-primary btn-block"
+                style={{ marginTop: 10, padding: '12px' }}
+                onClick={handleSubmitDeliverable}
+                disabled={actionLoading || !submissionNotes.trim()}
+              >
+                {actionLoading ? 'Submitting...' : 'Submit Deliverable & Begin 7-Day Review'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Flag Bad-Faith Modal */}
+      {flagModalOpen && (
+        <div className="modal-backdrop" onClick={() => setFlagModalOpen(false)}>
+          <div className="modal-sketch" onClick={e => e.stopPropagation()}>
+            <h3 className="font-display" style={{ fontSize: 19, fontWeight: 800, margin: '0 0 10px', color: '#9E1C1C' }}>
+              Flag Bad-Faith / Plagiarized Submission
+            </h3>
+            <p style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: 20 }}>
+              Are you sure? Flagging bad-faith work will forfeit the builder's locked stake directly to you, apply a -15 reputation penalty to the builder, and relist this codebase in the graveyard.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setFlagModalOpen(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => handleVerify('flagBadFaith')}
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Processing...' : 'Confirm Forfeiture & Relist'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  alias        String        @unique // e.g. "Digger-1042"
+  credits      Int           @default(500)
+  reputation   Int           @default(100)
+  ghostStrikes Int           @default(0)
+  banned       Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+
+  // Relations
+  ownedProjects Project[]    @relation("ProjectOwner")
+  commitments   Commitment[] @relation("TakerCommitment")
+  ledgerEntries LedgerEntry[]
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  ownerId         String
+  owner           User          @relation("ProjectOwner", fields: [ownerId], references: [id])
+  title           String
+  description     String
+  fileUrl         String        @default("/downloads/source.zip") // zip file stored on platform
+  fileName        String        @default("project_archive.zip")
+  stakeRequired   Int           @default(100) // stake required in credits
+  techTags        String        // JSON array or comma separated string e.g. ["React","Node.js"]
+  category        String        @default("Web")
+  completion      Int           @default(25) // estimated starting completion %
+  milestoneMode   Boolean       @default(false)
+  status          String        @default("LISTED") // LISTED, PENDING_APPROVAL, ACTIVE, SUBMITTED, COMPLETED, GHOSTED_RELISTED, CANCELLED_RELISTED, REJECTED_BADFAITH, CLOSED
+  reviewTimeoutAt DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  commitments   Commitment[]
+}
+
+model Commitment {
+  id              String      @id @default(cuid())
+  projectId       String
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  takerId         String
+  taker           User        @relation("TakerCommitment", fields: [takerId], references: [id])
+  status          String      @default("PENDING_APPROVAL") // PENDING_APPROVAL, ACTIVE, SUBMITTED, COMPLETED, GHOSTED, CANCELLED, REJECTED_BADFAITH
+  stakeLocked     Int         @default(0)
+  committedAt     DateTime    @default(now())
+  approvedAt      DateTime?
+  ghostDeadlineAt DateTime?   // now + 14d on approval
+  submittedAt     DateTime?
+  submissionNotes String?
+  submissionUrl   String?     // link or file path to deliverable
+  resolvedAt      DateTime?
+
+  // Relations
+  milestones      Milestone[]
+}
+
+model Milestone {
+  id           String      @id @default(cuid())
+  commitmentId String
+  commitment   Commitment  @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  title        String
+  dueAt        DateTime
+  status       String      @default("PENDING") // PENDING, MET, MISSED
+  missCount    Int         @default(0)
+}
+
+model LedgerEntry {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id])
+  type                String    // STAKE_LOCK, STAKE_FORFEIT, STAKE_REFUND, REWARD_CREDIT, REP_DELTA, GHOST_STRIKE
+  amount              Int       // positive or negative
+  relatedProjectId    String?
+  relatedCommitmentId String?
+  notes               String?
+  createdAt           DateTime  @default(now())
+
+  // Note: APPEND-ONLY, application layer exposes no update or delete operations on this table
+}
