@@ -1,0 +1,215 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{titlesec}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=black
+}
+
+\setlist{nosep, leftmargin=1.8em, itemsep=0.35em}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE \textbf{Gravefin: A Blind, Escrow-Backed Marketplace for Resurrecting Abandoned Codebases}\par}
+    \vspace{0.7em}
+    {\large Project Proposal for UCS503P\par}
+    \vspace{0.4em}
+    Submitted to: Department of Computer Science \& Engineering\\
+    Thapar Institute of Engineering and Technology\par
+    \vspace{1em}
+    Harshit, CSED\footnote{Roll No: 1024030xxx, Email: student@thapar.edu} \qquad Team Member, CSED\footnote{Roll No: 1024030xxx, Email: student2@thapar.edu}\par
+    \vspace{0.7em}
+    September 2026
+\end{center}
+
+\vspace{0.5em}
+
+\section{Higher-order goal \hfill \normalfont\small\textit{...secondary framing}}
+This project aims to salvage abandoned digital intellectual capital and advance collaborative software engineering by creating an adversarial-safe, trustless marketplace for finishing incomplete codebases. While academic institutions and open-source ecosystems produce thousands of viable hackathon, capstone, and research projects that stall at 60--80\% completion, the immediate engineering objective is to translate \textbf{skin-in-the-game collateral and deterministic timeout enforcement} into a measurable, production-grade web application.
+
+\section{Time-to-value \hfill \normalfont\small\textit{...primary heuristic}}
+\begin{itemize}
+    \item \textbf{Rapid Increment Delivery:} We deliver meaningful increments quickly by prototyping and validating the core end-to-end escrow state machine (Project Listing $\rightarrow$ Claim with Stake $\rightarrow$ Blind Delivery $\rightarrow$ Verification \& Collateral Release) within a short iteration window.
+    \item \textbf{Fast Feedback over Perfection:} We eliminate subjective negotiation by substituting unstructured in-app chat with strict state machine transitions, prioritizing automated CI-backed tests and ledger consistency early to reduce release friction.
+    \item \textbf{Measurable Outcomes:} Success is defined by what can be delivered and measured in the first iteration: zero double-claims, deterministic timeout enforcement via background jobs, and complete auditability across an append-only transaction ledger.
+\end{itemize}
+
+\section{Problem Statement}
+Across university campuses and developer communities, hundreds of promising repositories are abandoned due to graduation, semester transitions, or shifting academic priorities. Common pain points include:
+\begin{itemize}
+    \item \textbf{Fragmentation \& Intellectual Capital Waste:} High-potential codebases (compilers, kernel modules, distributed databases, machine learning pipelines) sit idle in private or dead repositories rather than reaching deployment.
+    \item \textbf{The Free-Rider \& Ghosting Problem:} When code is shared informally, prospective contributors frequently claim interest, request complete source access, and subsequently ghost---leaving original owners exploited and projects stalled.
+    \item \textbf{Subjective Disputes \& Off-Platform Chaos:} Unstructured communication channels (DMs, emails, forums) lead to scope creep, unverified claims, harassment, and interpersonal conflict over project completion.
+    \item \textbf{Financial \& Regulatory Overhead:} Implementing fiat monetary escrows requires burdensome PCI-DSS compliance, KYC identity verification, and banking rails that stifle low-friction student adoption.
+\end{itemize}
+\textbf{Why this matters now (contextual relevance):} In resource-constrained engineering environments, finishing existing, tested partial implementations is orders of magnitude more efficient than rebuilding from scratch. A trustless, points-based escrow marketplace introduces accountability without financial overhead.
+
+\section{Proposed Solution \hfill \normalfont\small\textit{...Software Proposition}}
+
+\subsection{Overview}
+Build a web-based ``Gravefin'' escrow marketplace platform with the following core modules:
+\begin{itemize}
+    \item \textbf{Dead Codebase Registry:} Repository owners list incomplete codebases with metadata, completion percentage, tech tags, and a mandatory collateral stake requirement.
+    \item \textbf{Anonymous Digger Identity Layer:} Cross-user identifiers are cryptographically decoupled from personal identities using deterministic pseudonyms (e.g., \texttt{Digger-1042}), preserving privacy and eliminating off-platform bias.
+    \item \textbf{Skin-in-the-Game Escrow Machine:} Takers lock credit collateral into escrow upon owner approval, ensuring genuine commitment before source archives are decrypted and unlocked for download.
+    \item \textbf{Append-Only Immutable Ledger:} Every credit allocation, stake lock, forfeiture, refund, and reputation adjustment is permanently recorded into an append-only audit trail (\texttt{LedgerEntry}).
+    \item \textbf{Deterministic Timeout \& Slashing Engine:} Background cron services continuously inspect project deadlines, automatically penalizing inactive takers ($>14$ days) or unresponsive owners ($>7$ days).
+    \item \textbf{Interactive Protocol Simulator:} A dedicated testing sandbox permitting administrators and evaluators to fast-forward time (+7d, +14d, +30d) and observe automated protocol state transitions in real time.
+\end{itemize}
+
+\subsection{Core workflow}
+\begin{enumerate}
+    \item \textbf{Listing:} Owner posts a project specifying completion stage (e.g., 65\%) and required taker stake (e.g., 150 credits).
+    \item \textbf{Claiming:} Prospective Taker submits a claim request. System validates credit balance.
+    \item \textbf{Escrow Lock:} Owner reviews applicant's reputation and approves. The platform locks the stake in escrow, changes project state to \texttt{ACTIVE}, and generates a 14-day inactivity deadline.
+    \item \textbf{Blind Work \& Download:} Taker downloads the authorized project archive and implements required milestones without conversational interference.
+    \item \textbf{Submission:} Taker uploads completed deliverables with implementation notes, transitioning the project to \texttt{SUBMITTED} and triggering a 7-day owner review window.
+    \item \textbf{Resolution:} 
+    \begin{itemize}
+        \item \textit{Approval:} Stake is fully refunded to Taker, 100 platform completion credits are rewarded, and both parties gain +15 reputation.
+        \item \textit{Owner Timeout ($>7$ days):} Automated cron automatically verifies the project, releasing escrow and awarding credits to the diligent Taker while docking Owner reputation.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Operational constraints for an educational setting}
+\begin{itemize}
+    \item \textbf{Zero In-App Chat:} No chat or messaging UI is built. All interactions are atomic state transitions.
+    \item \textbf{Client Usability:} Responsive web UI optimized for low-to-mid range devices via tokenized CSS without heavy client-side overhead.
+    \item \textbf{Deployability:} Built on managed serverless primitives (Next.js serverless functions, Neon PostgreSQL, Vercel cron) for zero-maintenance continuous operation.
+\end{itemize}
+
+\section{Solution Approach \hfill \normalfont\small\textit{...Engineering focus}}
+This is an applied systems engineering project focusing on distributed state machine consistency, adversarial fault tolerance, and verifiable auditability rather than speculative algorithms.
+
+\subsection{Deterministic Penalty Matrix \hfill \normalfont\small\textit{...non-research}}
+To eliminate human subjectivity and prevent platform abuse, all governance is handled via a deterministic matrix:
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{l p{3.2cm} p{2.4cm} p{1.8cm} l}
+\toprule
+\textbf{Trigger Event} & \textbf{Stake Action} & \textbf{Reputation} & \textbf{Strikes} & \textbf{Project State} \\
+\midrule
+\textbf{Taker ghosts ($>14$d inactive)} & Forfeited $\rightarrow$ Owner & Taker $-20$ & Taker $+1$ & Relisted (\texttt{LISTED}) \\
+\textbf{Owner ghosts (no review $>7$d)} & Refunded to Taker + 100 cr & Owner $-10$ & Owner $+1$ & Marked \texttt{COMPLETED} \\
+\textbf{Taker cancels pre-approval} & None (no stake locked) & Taker $-2$ & --- & Relisted (\texttt{LISTED}) \\
+\textbf{Owner cancels post-approval} & Full refund to Taker & Owner $-5$ & --- & Relisted (\texttt{LISTED}) \\
+\textbf{Milestone missed (1st/2nd)} & Retained in escrow & Taker $-5$ & --- & Remains \texttt{ACTIVE} \\
+\textbf{Repeated Milestone Failure} & Forfeited $\rightarrow$ Owner & Taker $-20$ & Taker $+1$ & Relisted (\texttt{LISTED}) \\
+\textbf{Plagiarism / Bad-Faith Flag} & Forfeited $\rightarrow$ Owner & Taker $-15$ & --- & Relisted (\texttt{LISTED}) \\
+\textbf{Cumulative Strikes $\ge 3$} & Pending stakes cancelled & --- & $\ge 3$ & \textbf{Account Banned} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Web architecture \hfill \normalfont\small\textit{...web-based solution}}
+A 3-tier architecture with unified dynamic routing:
+\begin{itemize}
+    \item \textbf{Frontend:} Responsive UI for repository browsing, claiming, deliverable submission, and live ledger inspection.
+    \item \textbf{Backend API:} Next.js Serverless API endpoints utilizing consolidated catch-all dispatchers (\texttt{/api/auth/[action]}, \texttt{/api/commitments/[...slug]}, \texttt{/api/projects/[...slug]}, \texttt{/api/users/[...slug]}).
+    \item \textbf{Database:} Prisma ORM connected to Neon Serverless PostgreSQL with connection pooling and relational foreign-key integrity.
+\end{itemize}
+
+\subsection{CI/CD and fast delivery enabler}
+\begin{itemize}
+    \item \textbf{Automated Test Suite:} Single-command unified test runner (\texttt{scripts/test-all.js}) verifying database integrity, protocol transitions, and live HTTP API flows.
+    \item \textbf{Continuous Deployment:} Integrated GitHub Actions and Vercel pipeline producing repeatable staging deployments on every commit.
+\end{itemize}
+
+\section{Evaluation Criterion \hfill \normalfont\small\textit{...measurable and attributable}}
+We define success using measurable metrics tied directly to the core state machine.
+
+\subsection{Primary evaluation metric}
+\textbf{Escrow Resolution Efficiency (ERE):} The percentage of initiated project commitments that transition from \texttt{ACTIVE} to either a verified completion or an automated deterministic penalty without deadlocking.
+\begin{itemize}
+    \item \textbf{Target:} 100\% deterministic resolution (0 deadlocked or orphaned states).
+    \item \textbf{Attribution:} Measured directly from database timestamps and ledger logs (\texttt{committedAt} vs. \texttt{resolvedAt}).
+\end{itemize}
+
+\subsection{Secondary evaluation metrics}
+\begin{itemize}
+    \item \textbf{Zero Double-Claims:} Concurrency safety ensuring no codebase can be simultaneously claimed by multiple takers (verified via transactional lock tests).
+    \item \textbf{Audit Completeness:} Ratio of credit balance mutations to corresponding \texttt{LedgerEntry} records (Target: Exactly 1.0; zero unlogged balance changes).
+    \item \textbf{Anonymity Leakage Rate:} Zero instances of user emails, hash passwords, or real names exposed in public API responses (verified via sanitization integration tests).
+    \item \textbf{Reliability \& Performance:} 100\% build pass rate with 0 compilation errors and $<100$ ms API response times under standard loads.
+\end{itemize}
+
+\subsection{Pilot validation plan \hfill \normalfont\small\textit{...high-level}}
+\begin{itemize}
+    \item Deploy 6 distinct test personas (\texttt{Digger-1042} Owner, \texttt{Digger-2099} Active Taker, \texttt{Digger-3310} Flagged Contributor, \texttt{Digger-5501} Strike-Risk User) across 12 diverse dead codebases.
+    \item Execute temporal simulations (+7 days, +14 days) via \texttt{/simulator} to validate automated slashing, stake refunding, and account banning.
+    \item Recruit 15--20 student developers to submit and claim lab repositories over a 2-week pilot window.
+\end{itemize}
+
+\section{Scalability \hfill \normalfont\small\textit{...with foresight}}
+The proposition scales in both theoretical and practical dimensions:
+\begin{enumerate}
+    \item \textbf{Scalable (theoretically):} The system supports growth in concurrent listings and commitments through decoupled frontend/backend components, indexed PostgreSQL foreign keys, and stateless serverless endpoints.
+    \item \textbf{Operationally deployable (practically):} The system runs on cost-effective cloud primitives:
+    \begin{itemize}
+        \item Managed Neon PostgreSQL serverless database with built-in connection pooling.
+        \item Platform-hosted Next.js deployment on Vercel edge networks.
+        \item Automated background cron resolver defined declaratively via \texttt{vercel.json}.
+    \end{itemize}
+\end{enumerate}
+
+\section{Engine availability heuristic}
+A mature set of ``engines'' (tooling/services) is leveraged to ensure rapid, dependable implementation:
+\begin{itemize}
+    \item \textbf{Web framework:} Next.js 14 for REST APIs and reactive pages.
+    \item \textbf{Managed database:} Neon PostgreSQL with Prisma ORM for type-safe relational schemas.
+    \item \textbf{Authentication approach:} Cryptographic HMAC SHA-256 session signatures with \texttt{HttpOnly} cookies.
+    \item \textbf{Storage:} Local and object storage support for source archive downloads.
+    \item \textbf{Testing \& CI runner:} Node.js native test runner and Vercel GitHub CI/CD integration.
+\end{itemize}
+By using these mature components, engineering effort is focused on workflow correctness, game-theoretic incentives, and auditability rather than reinventing underlying infrastructure.
+
+\section{Project scope and deliverables \hfill \normalfont\small\textit{...iteration-friendly}}
+
+\subsection{Initial deliverable \hfill \normalfont\small\textit{...first iteration}}
+\begin{itemize}
+    \item Full responsive web application across 11 core pages (Browse, Project Details, User Dashboard, Submit, Simulator, Login, Signup, About).
+    \item Database schema \& seed data (6 personas, 12 projects across Systems, Web, ML, and Mobile categories).
+    \item Complete escrow state machine with stake locking, deliverable submission, and owner verification.
+    \item Append-only audit ledger recording every transaction.
+    \item Cryptographic HMAC SHA-256 session authentication with \texttt{HttpOnly} cookies.
+    \item Consolidated, readable API layer (reduced from 18 files down to 7).
+    \item Master test runner (\texttt{scripts/test-all.js}) passing 23/23 end-to-end tests.
+\end{itemize}
+
+\subsection{Subsequent deliverables}
+\begin{itemize}
+    \item Multi-milestone incremental escrow payouts (releasing partial stakes per completed milestone).
+    \item Automated plagiarism / similarity checks using lightweight AST token hashing upon submission.
+    \item Optional Webhook notifications (Discord / Telegram bot alerts for timeout warnings).
+    \item Cryptographic code attestations linking completed projects to verified GitHub repository commits.
+\end{itemize}
+
+\section{Risks and mitigations}
+\begin{itemize}
+    \item \textbf{Malicious Claim \& Disappearance:} Mandatory upfront credit stake collateral; 14-day timeout automatically forfeits stake to project owner and adds a permanent ghost strike.
+    \item \textbf{Owner Bad-Faith Rejection:} Owners must provide concrete justification; if an owner ghosts, the 7-day review timeout auto-approves and releases funds to the taker.
+    \item \textbf{Identity De-anonymization:} Strict API sanitization (\texttt{sanitizeUser}); database separates internal user credentials from public \texttt{Digger-XXXX} aliases.
+    \item \textbf{Operational issues in pilot:} Zero-downtime serverless architecture with atomic database transactions preventing race conditions.
+\end{itemize}
+
+\section{Summary}
+This project proposes \textbf{Gravefin}, a deployable web platform engineered to eliminate waste in student and developer software ecosystems. It adheres directly to course criteria by emphasizing rapid time-to-value through working iterations, implementing CI/CD to support frequent safe releases, and establishing measurable evaluation criteria (specifically Escrow Resolution Efficiency). It remains focused on engineering workflow, adversarial fault tolerance, and scalability readiness rather than research-driven novelty.
+
+\end{document}
