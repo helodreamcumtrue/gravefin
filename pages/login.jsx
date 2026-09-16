@@ -4,13 +4,21 @@ import { useRouter } from 'next/router';
 import { useApp } from '../context/AppContext';
 import Icon from '../components/Icons';
 
-export default function Login() {
+export default function Login({ initialMode = 'login' }) {
   const router = useRouter();
-  const { login, personas, switchPersona, addToast } = useApp();
+  const { login, signup, personas, switchPersona, addToast } = useApp();
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState('sarah.chen@campus.edu');
   const [password, setPassword] = useState('password123');
+  const [confirmPassword, setConfirmPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  React.useEffect(() => {
+    if (router.query.mode === 'signup' || router.query.tab === 'signup') {
+      setMode('signup');
+    }
+  }, [router.query]);
 
   React.useEffect(() => {
     if (router.query.error) {
@@ -32,13 +40,31 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (mode === 'signup') {
+      if (password !== confirmPassword) {
+        setErrorMsg('Passwords do not match');
+        addToast('Passwords do not match', 'error');
+        return;
+      }
+      if (password.length < 6) {
+        setErrorMsg('Password must be at least 6 characters');
+        addToast('Password must be at least 6 characters', 'error');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
-      await login(email, password);
+      if (mode === 'signup') {
+        await signup(email, password);
+      } else {
+        await login(email, password);
+      }
       router.push('/dashboard');
     } catch (err) {
-      setErrorMsg(err.message || 'Authentication failed');
-      addToast(err.message || 'Authentication failed', 'error');
+      setErrorMsg(err.message || (mode === 'signup' ? 'Registration failed' : 'Authentication failed'));
+      addToast(err.message || (mode === 'signup' ? 'Registration failed' : 'Authentication failed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -63,10 +89,12 @@ export default function Login() {
           <Icon name="tombstone" size={22} />
         </div>
         <h1 className="font-display" style={{ fontSize: 28, fontWeight: 800, margin: '0 0 8px', letterSpacing: '-0.03em' }}>
-          Authenticate to Graveyard
+          {mode === 'signup' ? 'Create Anonymous Account' : 'Authenticate to Graveyard'}
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 13.5, margin: 0 }}>
-          Your real email is private. You will interact solely under your assigned <strong>Digger</strong> alias.
+          {mode === 'signup'
+            ? 'You will automatically be issued a unique Digger alias and 500 starter escrow credits.'
+            : 'Your real email is private. You will interact solely under your assigned Digger alias.'}
         </p>
       </div>
 
@@ -117,6 +145,44 @@ export default function Login() {
           boxShadow: '3px 4px 0px #141414'
         }}
       >
+        {/* Mode Selector Tabs */}
+        <div style={{ display: 'flex', gap: 6, background: '#FAF8F4', padding: 4, borderRadius: 10, border: '1.5px solid var(--border)' }}>
+          <button
+            type="button"
+            onClick={() => setMode('login')}
+            className="btn-sketch-sm"
+            style={{
+              flex: 1,
+              padding: '7px 0',
+              textAlign: 'center',
+              background: mode === 'login' ? 'var(--accent)' : 'transparent',
+              color: mode === 'login' ? '#FFFFFF' : 'var(--text)',
+              border: mode === 'login' ? '1.5px solid var(--border)' : 'none',
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('signup')}
+            className="btn-sketch-sm"
+            style={{
+              flex: 1,
+              padding: '7px 0',
+              textAlign: 'center',
+              background: mode === 'signup' ? 'var(--accent)' : 'transparent',
+              color: mode === 'signup' ? '#FFFFFF' : 'var(--text)',
+              border: mode === 'signup' ? '1.5px solid var(--border)' : 'none',
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+          >
+            Create Account (+500 cr)
+          </button>
+        </div>
+
         {/* GitHub OAuth Button */}
         <a
           href="/api/auth/github"
@@ -178,18 +244,36 @@ export default function Login() {
             />
           </div>
 
+          {mode === 'signup' && (
+            <div>
+              <label className="label">Confirm Password</label>
+              <input
+                type="password"
+                className="input"
+                style={{ height: 42, borderRadius: '10px' }}
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
           <button
             type="submit"
             className="btn btn-primary btn-block"
             style={{ marginTop: 4, height: 42, fontSize: 14.5, borderRadius: '10px' }}
             disabled={loading}
           >
-            {loading ? 'Authenticating...' : 'Log In with Email →'}
+            {loading ? 'Processing...' : (mode === 'signup' ? 'Create Account & Claim 500 Credits →' : 'Log In with Email →')}
           </button>
         </form>
 
         <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-          Don&apos;t have an account? <Link href="/signup" style={{ color: 'var(--text)', fontWeight: 800, textDecoration: 'underline' }}>Create anonymous account</Link>
+          {mode === 'signup' ? (
+            <span>Already have an account? <button type="button" onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>Sign In</button></span>
+          ) : (
+            <span>Don&apos;t have an account? <button type="button" onClick={() => setMode('signup')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>Create anonymous account</button></span>
+          )}
         </div>
       </div>
 
@@ -230,3 +314,4 @@ export default function Login() {
     </div>
   );
 }
+

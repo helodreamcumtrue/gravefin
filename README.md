@@ -36,16 +36,13 @@ Gravefin is a production-grade, trustless marketplace that resurrects abandoned 
 
 ```
 ├── components/          # Reusable UI components
-│   ├── AutopsyChart.jsx       # Commit activity timeline & forensic diagnostic
-│   ├── CauseOfDeclineTags.jsx # Primary decline reason badges & icons
+│   ├── AutopsyChart.jsx       # Forensic autopsy report & Cause of Decline diagnostic badges
 │   ├── EscrowStatusBanner.jsx # Real-time state machine progress header
 │   ├── Footer.jsx             # Digital Graveyard archive footer
 │   ├── GraveyardMap.jsx       # 2D Cartesian excavation quadrant map
-│   ├── HandoverChecklist.jsx  # Dual sign-off protocol & blooming tree animation
+│   ├── HandoverChecklist.jsx  # Dual sign-off protocol, blooming tree, & MilestoneTracker
 │   ├── Icons.jsx              # Hand-drawn SVG icon suite
-│   ├── LedgerTable.jsx        # Audit ledger transaction table
-│   ├── MilestoneTracker.jsx   # Milestone delivery checklist
-│   ├── Navbar.jsx             # Archive navigation & campus scope toggle
+│   ├── Navbar.jsx             # Archive navigation, active persona pill, & campus toggle
 │   ├── ProjectCard.jsx        # Tombstone card with headstone frame & health score
 │   └── ProvenanceTimeline.jsx # Append-only cryptographic hash chain
 ├── context/             # Global application & auth context (AppContext.jsx)
@@ -60,19 +57,18 @@ Gravefin is a production-grade, trustless marketplace that resurrects abandoned 
 │   ├── index.jsx        # Landing hero, lifecycle banner & philosophy pillars
 │   ├── browse.jsx       # Project catalog with category, status & stake filters
 │   ├── browse/map.jsx   # Dedicated 2D cartography quadrant map page
-│   ├── dashboard.jsx    # User profile, stakes, active claims & ledger
+│   ├── dashboard.jsx    # User profile, stakes, active claims, & colocated LedgerTable
 │   ├── leaderboard.jsx  # Community preservation rankings table & badges
-│   ├── login.jsx        # Digger authentication & quick persona login
-│   ├── map.jsx          # Shortcut route for cartography quadrant map
-│   ├── signup.jsx       # Anonymous account creation (+500 credit grant)
+│   ├── login.jsx        # Unified Digger authentication (Sign In / Register tabs & GitHub)
+│   ├── signup.jsx       # Lightweight registration alias delegating to unified auth
 │   ├── simulator.jsx    # Interactive cron & timeout execution sandbox
 │   ├── submit.jsx       # Dead repository listing flow
 │   ├── workbench.jsx    # Archivist workbench with specimens & marginalia notes
 │   ├── project/
-│   │   └── [id].jsx     # Forensic autopsy, escrow actions, handover & provenance
+│   │   └── [id].jsx     # 4-tab project dossier (Overview, Autopsy, Handover, Provenance)
 │   └── api/
 │       ├── auth/
-│       │   └── [action].js   # Consolidated auth (login, signup, logout, me, personas, switch)
+│       │   └── [...slug].js  # Unified auth: login, signup, logout, me, personas, switch, & GitHub OAuth
 │       ├── commitments/
 │       │   └── [...slug].js  # Consolidated claims (submit, withdraw, verify, milestones)
 │       ├── projects/

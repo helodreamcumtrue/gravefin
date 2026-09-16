@@ -3,11 +3,9 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useApp } from '../../context/AppContext';
 import EscrowStatusBanner from '../../components/EscrowStatusBanner';
-import MilestoneTracker from '../../components/MilestoneTracker';
-import AutopsyChart from '../../components/AutopsyChart';
-import CauseOfDeclineTags from '../../components/CauseOfDeclineTags';
+import AutopsyChart, { CauseOfDeclineTags } from '../../components/AutopsyChart';
 import ProvenanceTimeline from '../../components/ProvenanceTimeline';
-import HandoverChecklist from '../../components/HandoverChecklist';
+import HandoverChecklist, { MilestoneTracker } from '../../components/HandoverChecklist';
 import Icon from '../../components/Icons';
 import { getLocalProjects, saveLocalProjects } from '../../lib/mockFallback';
 
