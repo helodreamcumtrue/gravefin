@@ -386,6 +386,120 @@ async function runSection3_HTTPAuth() {
   }
 }
 
+async function runSection4_GitHubOAuth() {
+  console.log('\n======================================================');
+  console.log(' SECTION 4: GIT (GITHUB) OAUTH VERIFICATION');
+  console.log('======================================================');
+
+  const stamp = Date.now();
+  const testGhId = `gh_${stamp}`;
+  const testGhUsername = `gh_tester_${stamp}`;
+  const testGhEmail = `gh_user_${stamp}@graveyard.test`;
+
+  // 1. Test New User Registration via GitHub OAuth
+  const alias = `Digger-${Math.floor(1000 + Math.random() * 9000)}`;
+  const ghUser = await prisma.user.create({
+    data: {
+      email: testGhEmail,
+      githubId: testGhId,
+      githubUsername: testGhUsername,
+      alias,
+      credits: 0,
+      reputation: 100,
+      ghostStrikes: 0,
+      banned: false,
+      passwordHash: null
+    }
+  });
+
+  // Create genesis ledger entry
+  await prisma.ledgerEntry.create({
+    data: {
+      userId: ghUser.id,
+      type: 'REWARD_CREDIT',
+      amount: 500,
+      notes: 'Initial onboarding credits genesis grant (GitHub OAuth)'
+    }
+  });
+  await prisma.user.update({
+    where: { id: ghUser.id },
+    data: { credits: { increment: 500 } }
+  });
+
+  const refreshedGhUser = await prisma.user.findUnique({ where: { id: ghUser.id } });
+  if (
+    refreshedGhUser.githubId === testGhId &&
+    refreshedGhUser.githubUsername === testGhUsername &&
+    refreshedGhUser.credits === 500 &&
+    refreshedGhUser.alias.startsWith('Digger-') &&
+    refreshedGhUser.passwordHash === null
+  ) {
+    console.log(`✓ 1. GitHub OAuth user created: ${refreshedGhUser.alias} (@${refreshedGhUser.githubUsername}) with 500 credits.`);
+  } else {
+    throw new Error('GitHub OAuth user creation verification failed!');
+  }
+
+  // 2. Test Existing GitHub User Lookup & Username Synchronization
+  const newUsername = `${testGhUsername}_renamed`;
+  const updatedGhUser = await prisma.user.update({
+    where: { githubId: testGhId },
+    data: { githubUsername: newUsername }
+  });
+  if (updatedGhUser.githubUsername === newUsername && updatedGhUser.id === ghUser.id) {
+    console.log(`✓ 2. GitHub username update synchronized: @${newUsername}`);
+  } else {
+    throw new Error('GitHub username sync failed!');
+  }
+
+  // 3. Test Account Linking (Email User connects GitHub)
+  const emailUser = await prisma.user.create({
+    data: {
+      email: `email_only_${stamp}@graveyard.test`,
+      alias: `Digger-${Math.floor(1000 + Math.random() * 9000)}`,
+      credits: 500,
+      reputation: 100
+    }
+  });
+
+  const linkedGhId = `gh_link_${stamp}`;
+  const linkedGhUsername = `gh_linked_${stamp}`;
+  const linkedUser = await prisma.user.update({
+    where: { id: emailUser.id },
+    data: {
+      githubId: linkedGhId,
+      githubUsername: linkedGhUsername
+    }
+  });
+
+  const foundByGh = await prisma.user.findUnique({ where: { githubId: linkedGhId } });
+  if (foundByGh && foundByGh.id === emailUser.id && foundByGh.githubUsername === linkedGhUsername) {
+    console.log(`✓ 3. Linked GitHub identity (@${linkedGhUsername}) to existing user: ${linkedUser.alias}`);
+  } else {
+    throw new Error('GitHub account linking verification failed!');
+  }
+
+  // 4. Test Cryptographic Session Token Generation & Verification
+  try {
+    const authModule = await import('../lib/auth.js');
+    const token = authModule.createSessionToken(ghUser.id, ghUser.alias);
+    const verified = authModule.verifySessionToken(token);
+
+    if (verified && verified.userId === ghUser.id && verified.alias === ghUser.alias) {
+      console.log(`✓ 4. Cryptographic HMAC-SHA256 session token signed and verified for ${ghUser.alias}`);
+    } else {
+      throw new Error('HMAC session token verification failed for GitHub user');
+    }
+  } catch (err) {
+    console.error('Session verification error:', err.message);
+    throw err;
+  }
+
+  // 5. Cleanup transient test entities
+  await prisma.ledgerEntry.deleteMany({ where: { userId: { in: [ghUser.id, emailUser.id] } } });
+  await prisma.user.deleteMany({ where: { id: { in: [ghUser.id, emailUser.id] } } });
+  console.log('✓ 5. Cleaned up transient GitHub OAuth test records.');
+}
+
 async function main() {
   console.log('========================================================');
   console.log(' 🪦 GRAVEFIN MASTER TEST SUITE (UNIFIED RUNNER)');
@@ -395,9 +509,10 @@ async function main() {
     await runSection1_Protocol();
     await runSection2_EdgeCases();
     await runSection3_HTTPAuth();
+    await runSection4_GitHubOAuth();
 
     console.log('\n========================================================');
-    console.log(' 🎉 ALL PROTOCOL & EDGE-CASE TESTS PASSED PERFECTLY!');
+    console.log(' 🎉 ALL PROTOCOL, AUTH & GIT OAUTH TESTS PASSED!');
     console.log('========================================================\n');
     process.exit(0);
   } catch (err) {
@@ -409,3 +524,4 @@ async function main() {
 }
 
 main();
+

@@ -1,61 +1,78 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { Trophy, Award, Sparkles, ShieldCheck } from 'lucide-react';
 
+const FALLBACK_LEADERBOARD = [
+  {
+    rank: 1,
+    alias: 'Digger-1042',
+    handle: '@digger_chen',
+    role: 'Chief Project Archaeologist',
+    projectsRevived: 9,
+    artifactsPreserved: 28,
+    reputation: 140,
+    badges: ['🏆 Chief Archaeologist', '⚡ Master Reviver', '🪦 Graveyard Keeper'],
+  },
+  {
+    rank: 2,
+    alias: 'Digger-2099',
+    handle: '@alex_rivera',
+    role: 'Lead Code Reviver',
+    projectsRevived: 7,
+    artifactsPreserved: 21,
+    reputation: 125,
+    badges: ['🏆 First Revival', '⚡ Fast Handover'],
+  },
+  {
+    rank: 3,
+    alias: 'Digger-7700',
+    handle: '@chloe_zhao',
+    role: 'Graveyard Curator',
+    projectsRevived: 5,
+    artifactsPreserved: 17,
+    reputation: 130,
+    badges: ['🪦 Graveyard Keeper', '🛡️ Zero Ghosting'],
+  },
+  {
+    rank: 4,
+    alias: 'Digger-3310',
+    handle: '@elena_dev',
+    role: 'Specimen Inspector',
+    projectsRevived: 4,
+    artifactsPreserved: 14,
+    reputation: 95,
+    badges: ['⚡ Fast Handover'],
+  },
+  {
+    rank: 5,
+    alias: 'Digger-5501',
+    handle: '@marcus_vance',
+    role: 'Excavation Scholar',
+    projectsRevived: 3,
+    artifactsPreserved: 11,
+    reputation: 60,
+    badges: ['📜 Field Researcher'],
+  }
+];
+
 export default function LeaderboardPage() {
-  const leaderboards = [
-    {
-      rank: 1,
-      alias: 'Digger-1042',
-      handle: '@digger_chen',
-      role: 'Chief Project Archaeologist',
-      projectsRevived: 9,
-      artifactsPreserved: 28,
-      reputation: 140,
-      badges: ['🏆 First Revival', '🪦 Graveyard Keeper', '⚡ Restoration Expert'],
-    },
-    {
-      rank: 2,
-      alias: 'Digger-2099',
-      handle: '@alex_rivera',
-      role: 'Lead Code Reviver',
-      projectsRevived: 7,
-      artifactsPreserved: 21,
-      reputation: 125,
-      badges: ['🏆 First Revival', '⚡ Fast Handover'],
-    },
-    {
-      rank: 3,
-      alias: 'Digger-7700',
-      handle: '@chloe_zhao',
-      role: 'Graveyard Curator',
-      projectsRevived: 5,
-      artifactsPreserved: 17,
-      reputation: 130,
-      badges: ['🪦 Graveyard Keeper', '🛡️ Zero Ghosting'],
-    },
-    {
-      rank: 4,
-      alias: 'Digger-3310',
-      handle: '@elena_dev',
-      role: 'Specimen Inspector',
-      projectsRevived: 4,
-      artifactsPreserved: 14,
-      reputation: 95,
-      badges: ['⚡ Fast Handover'],
-    },
-    {
-      rank: 5,
-      alias: 'Digger-5501',
-      handle: '@marcus_vance',
-      role: 'Excavation Scholar',
-      projectsRevived: 3,
-      artifactsPreserved: 11,
-      reputation: 60,
-      badges: ['📜 Forensic Analyst'],
-    }
-  ];
+  const [leaderboards, setLeaderboards] = useState(FALLBACK_LEADERBOARD);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/users/leaderboard')
+      .then(res => res.json())
+      .then(data => {
+        if (data.leaderboard && data.leaderboard.length > 0) {
+          setLeaderboards(data.leaderboard);
+        }
+      })
+      .catch(() => {
+        // Fallback to pre-seeded static rankings
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <>

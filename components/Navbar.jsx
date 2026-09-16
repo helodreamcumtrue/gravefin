@@ -15,7 +15,9 @@ import {
   X,
   ArrowRight,
   Shield,
-  Coins
+  Coins,
+  Terminal,
+  Info
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -41,6 +43,8 @@ export default function Navbar() {
     { href: '/submit', label: 'Submit', icon: PlusCircle },
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { href: '/simulator', label: 'Sandbox', icon: Terminal },
+    { href: '/about', label: 'Manifesto', icon: Info },
   ];
 
   const isActive = (href) => {
@@ -240,27 +244,31 @@ export default function Navbar() {
               onClick={() => setPersonaOpen(!personaOpen)}
               className="sketch-btn"
               style={{
-                width: 38,
                 height: 38,
-                borderRadius: '50%',
-                padding: 0,
-                display: 'flex',
+                padding: '0 12px',
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative'
+                gap: 8,
+                position: 'relative',
+                fontSize: 12.5,
+                fontFamily: 'var(--font-mono)'
               }}
               title={currentUser ? `Archivist: ${currentUser.alias}` : 'Archaeologist Profile'}
               aria-label="Archivist Profile"
             >
-              <User style={{ width: 18, height: 18, color: 'var(--color-ink)' }} />
+              <User style={{ width: 15, height: 15, color: 'var(--color-ink)' }} />
+              <span className="hide-mobile" style={{ fontWeight: 600 }}>
+                {currentUser ? `${currentUser.alias} (${currentUser.credits} cr)` : 'Select Persona'}
+              </span>
+              <span style={{ fontSize: 10, opacity: 0.7 }}>▾</span>
               {currentUser && (
                 <span
                   style={{
                     position: 'absolute',
                     top: -2,
                     right: -2,
-                    width: 10,
-                    height: 10,
+                    width: 9,
+                    height: 9,
                     borderRadius: '50%',
                     backgroundColor: '#15803d',
                     border: '1.5px solid #ffffff'

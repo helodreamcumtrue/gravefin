@@ -31,7 +31,62 @@ export default async function handler(req, res) {
     }
   }
 
+  if (resource === 'leaderboard') {
+    return handleLeaderboard(req, res);
+  }
+
   return res.status(404).json({ error: `User route '/api/users/${slug.join('/')}' not found` });
+}
+
+// 3. GET /api/users/leaderboard
+async function handleLeaderboard(req, res) {
+  try {
+    const users = await prisma.user.findMany({
+      where: { banned: false },
+      orderBy: { reputation: 'desc' },
+      take: 10,
+      include: {
+        ownedProjects: {
+          select: { id: true, status: true }
+        },
+        commitments: {
+          where: { status: 'COMPLETED' },
+          select: { id: true }
+        }
+      }
+    });
+
+    const leaderboard = users.map((u, index) => {
+      const projectsRevived = u.commitments?.length || 0;
+      const artifactsPreserved = u.ownedProjects?.length || 0;
+      const badges = [];
+
+      if (index === 0) badges.push('🏆 Chief Archaeologist');
+      if (u.reputation >= 120) badges.push('⚡ Master Reviver');
+      if (u.ghostStrikes === 0) badges.push('🛡️ Zero Ghosting');
+      if (artifactsPreserved >= 3) badges.push('🪦 Graveyard Keeper');
+      if (badges.length === 0) badges.push('📜 Field Researcher');
+
+      return {
+        rank: index + 1,
+        id: u.id,
+        alias: u.alias,
+        handle: u.githubUsername ? `@${u.githubUsername}` : `@${u.alias.toLowerCase().replace('-', '_')}`,
+        role: index === 0 ? 'Chief Project Archaeologist' : index === 1 ? 'Lead Code Reviver' : index === 2 ? 'Graveyard Curator' : 'Specimen Inspector',
+        projectsRevived,
+        artifactsPreserved,
+        reputation: u.reputation,
+        credits: u.credits,
+        ghostStrikes: u.ghostStrikes,
+        badges
+      };
+    });
+
+    return res.status(200).json({ leaderboard });
+  } catch (err) {
+    console.error('Error in leaderboard API:', err);
+    return res.status(500).json({ error: 'Failed to retrieve leaderboard' });
+  }
 }
 
 // 1. GET /api/users/me

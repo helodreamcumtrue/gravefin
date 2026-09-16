@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useApp } from '../context/AppContext';
 import LedgerTable from '../components/LedgerTable';
 import Icon from '../components/Icons';
 import { getLocalProjects } from '../lib/mockFallback';
 
 export default function Dashboard() {
-  const { currentUser, addToast } = useApp();
+  const router = useRouter();
+  const { currentUser, refreshUser, addToast } = useApp();
   const [tab, setTab] = useState('overview');
   const [userData, setUserData] = useState(null);
   const [ledger, setLedger] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (router.query.tab) {
+      setTab(router.query.tab);
+    }
+    if (router.query.connected === 'github') {
+      addToast('GitHub account successfully linked!', 'success');
+      if (refreshUser) refreshUser();
+    }
+    if (router.query.error === 'github_already_linked') {
+      addToast('This GitHub account is already linked to another user.', 'error');
+    }
+  }, [router.query, addToast, refreshUser]);
 
   useEffect(() => {
     if (currentUser) {
@@ -518,6 +533,67 @@ export default function Dashboard() {
                 <div style={{ fontSize: 12.5, color: 'var(--text-dim)', marginTop: 3 }}>
                   3 strikes automatically restricts an account from creating new listings or claiming codebases.
                 </div>
+              </div>
+
+              {/* Connected Git / GitHub Identity */}
+              <div style={{ borderTop: '1.5px dotted var(--border)', paddingTop: 14 }}>
+                <label className="label">Connected Git Identity (OAuth)</label>
+                {currentUser.githubUsername || userData?.user?.githubUsername ? (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 8, background: '#24292F', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '1.5px 1.5px 0px #141414' }}>
+                          <Icon name="github" size={20} />
+                        </div>
+                        <div>
+                          <a
+                            href={`https://github.com/${currentUser.githubUsername || userData?.user?.githubUsername}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontWeight: 800, fontSize: 14.5, color: 'var(--text)', textDecoration: 'underline' }}
+                          >
+                            @{currentUser.githubUsername || userData?.user?.githubUsername}
+                          </a>
+                          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                            Verified GitHub OAuth Account
+                          </div>
+                        </div>
+                      </div>
+                      <span className="badge-sketch" style={{ background: '#DCFCE7', color: '#166534', border: '1.5px solid #166534', fontWeight: 700, fontSize: 12 }}>
+                        ✓ Connected
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12.5, color: 'var(--text-dim)', marginTop: 8 }}>
+                      Enables seamless 1-click GitHub login and cryptographic repo handover attestations.
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 8, background: '#FAF8F4', border: '1.5px solid var(--border)', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon name="github" size={20} />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+                            No Git account linked
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                            Connect GitHub for fast 1-click login and repo transfer attestations.
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href="/api/auth/github"
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, textDecoration: 'none', background: '#24292F', color: '#FFFFFF', border: '1.5px solid #141414', boxShadow: '1.5px 1.5px 0px #141414' }}
+                      >
+                        <Icon name="github" size={15} />
+                        <span>Connect GitHub</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

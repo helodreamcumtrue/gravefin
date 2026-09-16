@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import {
   Clock,
   Activity,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function ProjectCard({ project, index = 0 }) {
+  const router = useRouter();
   let tags = [];
   try {
     tags = typeof project.techTags === 'string' ? JSON.parse(project.techTags) : project.techTags || [];
@@ -54,9 +56,16 @@ export default function ProjectCard({ project, index = 0 }) {
 
   const hasTornCorner = project.hasTornCorner ?? (index % 2 === 0);
 
+  const handleCardClick = (e) => {
+    // If user clicked directly on a link or button, let that handle it
+    if (e.target.closest('a') || e.target.closest('button')) return;
+    router.push(`/project/${project.id}`);
+  };
+
   return (
     <div
       className="sketch-card"
+      onClick={handleCardClick}
       style={{
         padding: '20px 20px 16px',
         position: 'relative',

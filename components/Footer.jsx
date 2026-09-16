@@ -26,6 +26,7 @@ export default function Footer() {
           <Link href="/leaderboard" style={{ textDecoration: 'none', color: 'inherit' }}>Leaderboard</Link>
           <Link href="/dashboard" style={{ textDecoration: 'none', color: 'inherit' }}>Dashboard & Ledger</Link>
           <Link href="/simulator" style={{ textDecoration: 'none', color: 'inherit' }}>Sandbox</Link>
+          <Link href="/about" style={{ textDecoration: 'none', color: 'inherit' }}>Manifesto</Link>
         </div>
       </div>
 

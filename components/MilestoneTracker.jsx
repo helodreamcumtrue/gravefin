@@ -10,7 +10,8 @@ export default function MilestoneTracker({ commitmentId, milestones = [], isTake
     try {
       setUpdating(mid);
       const res = await fetch(`/api/commitments/${commitmentId}/milestones/${mid}/complete`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update milestone');

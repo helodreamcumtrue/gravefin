@@ -47,8 +47,48 @@ export default function HandoverChecklist({ project }) {
     }
   ]);
 
-  const [growthStage, setGrowthStage] = useState('sapling'); // 'tombstone' | 'sapling' | 'tree'
+  const [growthStage, setGrowthStage] = useState('tombstone'); // 'tombstone' | 'sapling' | 'tree'
   const [isCompleted, setIsCompleted] = useState(false);
+
+  React.useEffect(() => {
+    if (project?.status === 'COMPLETED') {
+      setGrowthStage('tree');
+      setIsCompleted(true);
+      setSteps(prev => prev.map(s => ({
+        ...s,
+        ownerConfirmed: true,
+        adopterConfirmed: true,
+        completedAt: s.completedAt || new Date().toISOString()
+      })));
+    } else if (project?.status === 'SUBMITTED') {
+      setGrowthStage('sapling');
+      setIsCompleted(false);
+      setSteps(prev => prev.map((s, idx) => ({
+        ...s,
+        ownerConfirmed: idx < 3,
+        adopterConfirmed: idx < 3,
+        completedAt: idx < 3 ? (s.completedAt || new Date().toISOString()) : null
+      })));
+    } else if (project?.status === 'ACTIVE') {
+      setGrowthStage('sapling');
+      setIsCompleted(false);
+      setSteps(prev => prev.map((s, idx) => ({
+        ...s,
+        ownerConfirmed: idx === 0,
+        adopterConfirmed: idx === 0,
+        completedAt: idx === 0 ? (s.completedAt || new Date().toISOString()) : null
+      })));
+    } else {
+      setGrowthStage('tombstone');
+      setIsCompleted(false);
+      setSteps(prev => prev.map(s => ({
+        ...s,
+        ownerConfirmed: false,
+        adopterConfirmed: false,
+        completedAt: null
+      })));
+    }
+  }, [project?.status]);
 
   const [messages, setMessages] = useState([
     { id: 1, sender: 'Original Creator', text: 'Transfer documentation PDF generated and linked below.', time: '10:30 AM' },
@@ -153,21 +193,12 @@ export default function HandoverChecklist({ project }) {
         </div>
 
         {!isCompleted && (
-          <button
-            onClick={triggerRevivalCelebration}
-            className="sketch-btn"
-            style={{
-              padding: '6px 16px',
-              fontFamily: 'var(--font-hand)',
-              fontSize: 18,
-              fontWeight: 700,
-              gap: 8,
-              marginTop: 4
-            }}
-          >
-            <Sparkles style={{ width: 16, height: 16, color: 'var(--color-ink)' }} />
-            <span>Simulate Full Handover Sign-Off</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'rgba(17, 17, 17, 0.75)', marginTop: 6 }}>
+            <span className="sketch-tag" style={{ padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>
+              Protocol Stage: {project?.status || 'LISTED'}
+            </span>
+            <span>Dual-signing advances automatically as deliverables are submitted & verified</span>
+          </div>
         )}
       </div>
 

@@ -11,15 +11,17 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  passwordHash String
-  alias        String        @unique // e.g. "Digger-1042"
-  credits      Int           @default(500)
-  reputation   Int           @default(100)
-  ghostStrikes Int           @default(0)
-  banned       Boolean       @default(false)
-  createdAt    DateTime      @default(now())
+  id             String        @id @default(cuid())
+  email          String        @unique
+  passwordHash   String?
+  githubId       String?       @unique
+  githubUsername String?
+  alias          String        @unique // e.g. "Digger-1042"
+  credits        Int           @default(500)
+  reputation     Int           @default(100)
+  ghostStrikes   Int           @default(0)
+  banned         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
 
   // Relations
   ownedProjects Project[]    @relation("ProjectOwner")

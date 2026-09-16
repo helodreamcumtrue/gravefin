@@ -59,6 +59,10 @@ html, body {
   font-family: var(--font-hand);
 }
 
+.font-display {
+  font-family: var(--font-hand);
+}
+
 .font-sans {
   font-family: var(--font-sans);
 }
@@ -328,6 +332,16 @@ html, body {
   width: 100%;
 }
 
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+
+.btn-sketch-sm {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
 .btn-sketch {
   border: 2px solid var(--color-ink-border);
   border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
@@ -397,6 +411,85 @@ html, body {
   border: 1.5px solid var(--color-ink-border);
   border-radius: 999px;
   background: var(--color-paper);
+}
+
+.chip-accent {
+  background: #fff4e5;
+  border-color: #9e5d00;
+  color: #9e5d00;
+}
+
+.chip-teal {
+  background: #eaf5ed;
+  border-color: #1e6b3e;
+  color: #1e6b3e;
+}
+
+/* Status Badges */
+.badge-LISTED {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border-color: var(--color-ink-border);
+}
+
+.badge-PENDING_APPROVAL {
+  background: #fff4e5;
+  color: #9e5d00;
+  border-color: #9e5d00;
+}
+
+.badge-ACTIVE {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.badge-SUBMITTED {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #b45309;
+}
+
+.badge-COMPLETED {
+  background: #eaf5ed;
+  color: #15803d;
+  border-color: #15803d;
+}
+
+.badge-GHOSTED,
+.badge-GHOSTED_RELISTED,
+.badge-FLAGGED,
+.badge-REJECTED_BADFAITH,
+.badge-CANCELLED {
+  background: #fde8e8;
+  color: #9e1c1c;
+  border-color: #9e1c1c;
+}
+
+/* Dashboard Sidebar Links */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-ink);
+  transition: all 0.12s ease;
+  border: 1.5px solid transparent;
+}
+
+.sidebar-link:hover {
+  background-color: var(--color-paper-dark);
+  border-color: rgba(17, 17, 17, 0.15);
+}
+
+.sidebar-link.active {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  border-color: var(--color-ink);
+  box-shadow: 1.5px 2px 0px #141414;
 }
 
 /* Modals & Toasts */

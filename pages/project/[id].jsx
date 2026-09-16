@@ -14,11 +14,12 @@ import { getLocalProjects, saveLocalProjects } from '../../lib/mockFallback';
 export default function ProjectDetails({ projectId }) {
   const router = useRouter();
   const id = projectId || router.query.id;
-  const { currentUser, addToast, refreshUser } = useApp();
+  const { currentUser, personas, switchPersona, addToast, refreshUser } = useApp();
 
   const [project, setProject] = useState(null);
   const [activeCommitment, setActiveCommitment] = useState(null);
   const [userRole, setUserRole] = useState('GUEST');
+  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -377,7 +378,11 @@ export default function ProjectDetails({ projectId }) {
 
   // Download project source code
   const handleDownload = () => {
-    window.open('/downloads/source.zip', '_blank');
+    if (project?.id) {
+      window.location.href = `/api/projects/${project.id}/download`;
+    } else {
+      window.open('/downloads/source.zip', '_blank');
+    }
   };
 
   if (loading) {
@@ -439,7 +444,7 @@ export default function ProjectDetails({ projectId }) {
             className="card"
             style={{
               padding: 26,
-              marginBottom: 24,
+              marginBottom: 20,
               position: 'relative',
               background: '#FFFFFF'
             }}
@@ -469,176 +474,279 @@ export default function ProjectDetails({ projectId }) {
             </div>
           </div>
 
-          {/* Completion Progress Gauge */}
+          {/* Section Navigation Tabs */}
           <div
-            className="surface2"
             style={{
-              padding: 20,
-              marginBottom: 24,
               display: 'flex',
-              alignItems: 'center',
-              gap: 20,
-              border: '2px solid var(--border)',
-              borderRadius: '16px',
-              boxShadow: 'var(--shadow-sketch-sm)'
+              gap: 8,
+              borderBottom: '2px solid var(--border)',
+              marginBottom: 22,
+              paddingBottom: 4,
+              overflowX: 'auto'
             }}
           >
-            <div
-              style={{
-                width: 66,
-                height: 66,
-                borderRadius: '50%',
-                background: '#FFFFFF',
-                border: '2px solid var(--border)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: 17,
-                color: 'var(--text)',
-                boxShadow: '1.5px 2px 0px #141414',
-                flexShrink: 0
-              }}
-            >
-              <span>{project.completion}%</span>
-            </div>
+            {[
+              { id: 'overview', label: '📋 Overview & Specs' },
+              { id: 'autopsy', label: '🔬 Autopsy & Diagnostics' },
+              { id: 'handover', label: '🌱 Escrow & Handover' },
+              { id: 'provenance', label: '📜 Provenance Ledger' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className="btn-sketch-sm"
+                style={{
+                  background: activeTab === tab.id ? 'var(--accent)' : '#FFFFFF',
+                  color: activeTab === tab.id ? '#FFFFFF' : 'var(--text)',
+                  borderColor: 'var(--border)',
+                  fontWeight: activeTab === tab.id ? 800 : 600,
+                  fontSize: 13,
+                  padding: '8px 14px',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  boxShadow: activeTab === tab.id ? 'none' : 'var(--shadow-sketch-sm)'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* TAB 1: OVERVIEW & SPECS */}
+          {activeTab === 'overview' && (
             <div>
-              <div style={{ fontWeight: 800, fontSize: 14.5, fontFamily: 'var(--font-display)' }}>
-                Scope Completion Estimate
-              </div>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0', lineHeight: 1.45 }}>
-                Estimated working state of original scope. The anonymous builder must complete all remaining deliverables to successfully release escrow.
-              </p>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div
-            className="card"
-            style={{
-              padding: 24,
-              marginBottom: 24,
-              background: '#FFFFFF'
-            }}
-          >
-            <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', margin: '0 0 12px', color: 'var(--text)' }}>
-              About this codebase
-            </h3>
-            <p style={{ fontSize: 14.5, lineHeight: 1.7, color: 'var(--text-muted)', margin: 0, whiteSpace: 'pre-line' }}>
-              {project.description}
-            </p>
-          </div>
-
-          {/* Tech Stack */}
-          <div
-            className="card"
-            style={{
-              padding: 22,
-              marginBottom: 24,
-              background: '#FFFFFF'
-            }}
-          >
-            <h3 style={{ fontSize: 15, fontWeight: 800, fontFamily: 'var(--font-display)', margin: '0 0 12px', color: 'var(--text)' }}>
-              Technologies & Frameworks
-            </h3>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {tags.map(t => (
-                <span
-                  key={t}
-                  className="tag-sketch"
-                  style={{ fontSize: 12.5, padding: '5px 12px', background: '#F4EFE6' }}
+              {/* Completion Progress Gauge */}
+              <div
+                className="surface2"
+                style={{
+                  padding: 20,
+                  marginBottom: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 20,
+                  border: '2px solid var(--border)',
+                  borderRadius: '16px',
+                  boxShadow: 'var(--shadow-sketch-sm)'
+                }}
+              >
+                <div
+                  style={{
+                    width: 66,
+                    height: 66,
+                    borderRadius: '50%',
+                    background: '#FFFFFF',
+                    border: '2px solid var(--border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    fontSize: 17,
+                    color: 'var(--text)',
+                    boxShadow: '1.5px 2px 0px #141414',
+                    flexShrink: 0
+                  }}
                 >
-                  {t}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Cause of Decline Diagnostic Tags */}
-          <div className="sketch-card-static" style={{ padding: 20, marginBottom: 24, backgroundColor: 'var(--color-paper)' }}>
-            <CauseOfDeclineTags tags={project.autopsyReport?.causeOfDeclineTags} />
-          </div>
-
-          {/* Autopsy Report Forensic Diagnostic */}
-          <div style={{ marginBottom: 24 }}>
-            <AutopsyChart report={project.autopsyReport} />
-          </div>
-
-          {/* Stewardship Handover Protocol & Transformation */}
-          <div style={{ marginBottom: 24 }}>
-            <HandoverChecklist project={project} />
-          </div>
-
-          {/* Append-Only Provenance Timeline */}
-          <div style={{ marginBottom: 24 }}>
-            <ProvenanceTimeline nodes={project.provenance} />
-          </div>
-
-          {/* Milestones Section */}
-          {activeCommitment && activeCommitment.milestones && activeCommitment.milestones.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', margin: 0, color: 'var(--text)' }}>
-                  Milestone Checkpoints
-                </h3>
-                <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 600 }}>
-                  System-tracked milestones
-                </span>
+                  <span>{project.completion}%</span>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 14.5, fontFamily: 'var(--font-display)' }}>
+                    Scope Completion Estimate
+                  </div>
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0', lineHeight: 1.45 }}>
+                    Estimated working state of original scope. The anonymous builder must complete all remaining deliverables to successfully release escrow.
+                  </p>
+                </div>
               </div>
-              <MilestoneTracker
-                commitmentId={activeCommitment.id}
-                milestones={activeCommitment.milestones}
-                isTaker={isTaker}
-                onMilestoneUpdated={fetchProjectDetail}
-              />
+
+              {/* Description */}
+              <div
+                className="card"
+                style={{
+                  padding: 24,
+                  marginBottom: 24,
+                  background: '#FFFFFF'
+                }}
+              >
+                <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', margin: '0 0 12px', color: 'var(--text)' }}>
+                  About this codebase
+                </h3>
+                <p style={{ fontSize: 14.5, lineHeight: 1.7, color: 'var(--text-muted)', margin: 0, whiteSpace: 'pre-line' }}>
+                  {project.description}
+                </p>
+              </div>
+
+              {/* Tech Stack */}
+              <div
+                className="card"
+                style={{
+                  padding: 22,
+                  marginBottom: 24,
+                  background: '#FFFFFF'
+                }}
+              >
+                <h3 style={{ fontSize: 15, fontWeight: 800, fontFamily: 'var(--font-display)', margin: '0 0 12px', color: 'var(--text)' }}>
+                  Technologies & Frameworks
+                </h3>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {tags.map(t => (
+                    <span
+                      key={t}
+                      className="tag-sketch"
+                      style={{ fontSize: 12.5, padding: '5px 12px', background: '#F4EFE6' }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Protocol Guarantee Box */}
+              <div
+                className="card"
+                style={{
+                  padding: 22,
+                  background: '#F4EFE6',
+                  border: '2px solid var(--border)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <Icon name="shield" size={17} />
+                  <strong style={{ fontSize: 14.5, fontFamily: 'var(--font-display)' }}>System Enforced Trust Guarantees</strong>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.65 }}>
+                  <li><strong>Zero Exposure:</strong> Neither party ever sees the other's real email, name, or contact details.</li>
+                  <li><strong>Ghost Protection:</strong> If the builder stops working for 14 days, their stake is automatically forfeited to the owner and the project relists.</li>
+                  <li><strong>Review Protection:</strong> If the owner fails to verify submitted work within 7 days, the system automatically awards the reward to the builder.</li>
+                </ul>
+              </div>
             </div>
           )}
 
-          {/* Submitted Notes (if SUBMITTED) */}
-          {activeCommitment?.submissionNotes && (
-            <div
-              className="surface2"
-              style={{
-                padding: 20,
-                marginBottom: 24,
-                border: '2px solid var(--border)',
-                borderLeft: '6px solid var(--border)',
-                borderRadius: '12px'
-              }}
-            >
-              <h4 style={{ margin: '0 0 8px', fontSize: 14.5, fontWeight: 800, color: 'var(--text)' }}>
-                Taker Deliverable Notes
-              </h4>
-              <p style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-                {activeCommitment.submissionNotes}
-              </p>
+          {/* TAB 2: AUTOPSY & DIAGNOSTICS */}
+          {activeTab === 'autopsy' && (
+            <div>
+              {/* Cause of Decline Diagnostic Tags */}
+              <div className="sketch-card-static" style={{ padding: 20, marginBottom: 24, backgroundColor: 'var(--color-paper)' }}>
+                <CauseOfDeclineTags tags={project.autopsyReport?.causeOfDeclineTags} />
+              </div>
+
+              {/* Autopsy Report Forensic Diagnostic */}
+              <div style={{ marginBottom: 24 }}>
+                <AutopsyChart report={project.autopsyReport} />
+              </div>
             </div>
           )}
 
-          {/* Protocol Guarantee Box */}
-          <div
-            className="card"
-            style={{
-              padding: 22,
-              background: '#F4EFE6',
-              border: '2px solid var(--border)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <Icon name="shield" size={17} />
-              <strong style={{ fontSize: 14.5, fontFamily: 'var(--font-display)' }}>System Enforced Trust Guarantees</strong>
+          {/* TAB 3: ESCROW & HANDOVER */}
+          {activeTab === 'handover' && (
+            <div>
+              {/* Stewardship Handover Protocol & Transformation */}
+              <div style={{ marginBottom: 24 }}>
+                <HandoverChecklist project={project} />
+              </div>
+
+              {/* Milestones Section */}
+              {activeCommitment && activeCommitment.milestones && activeCommitment.milestones.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', margin: 0, color: 'var(--text)' }}>
+                      Milestone Checkpoints
+                    </h3>
+                    <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 600 }}>
+                      System-tracked milestones
+                    </span>
+                  </div>
+                  <MilestoneTracker
+                    commitmentId={activeCommitment.id}
+                    milestones={activeCommitment.milestones}
+                    isTaker={isTaker}
+                    onMilestoneUpdated={fetchProjectDetail}
+                  />
+                </div>
+              )}
+
+              {/* Submitted Notes (if SUBMITTED) */}
+              {activeCommitment?.submissionNotes && (
+                <div
+                  className="surface2"
+                  style={{
+                    padding: 20,
+                    marginBottom: 24,
+                    border: '2px solid var(--border)',
+                    borderLeft: '6px solid var(--border)',
+                    borderRadius: '12px'
+                  }}
+                >
+                  <h4 style={{ margin: '0 0 8px', fontSize: 14.5, fontWeight: 800, color: 'var(--text)' }}>
+                    Taker Deliverable Notes
+                  </h4>
+                  <p style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+                    {activeCommitment.submissionNotes}
+                  </p>
+                </div>
+              )}
             </div>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.65 }}>
-              <li><strong>Zero Exposure:</strong> Neither party ever sees the other's real email, name, or contact details.</li>
-              <li><strong>Ghost Protection:</strong> If the builder stops working for 14 days, their stake is automatically forfeited to the owner and the project relists.</li>
-              <li><strong>Review Protection:</strong> If the owner fails to verify submitted work within 7 days, the system automatically awards the reward to the builder.</li>
-            </ul>
-          </div>
+          )}
+
+          {/* TAB 4: PROVENANCE LEDGER */}
+          {activeTab === 'provenance' && (
+            <div>
+              <div style={{ marginBottom: 24 }}>
+                <ProvenanceTimeline nodes={project.provenance} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Escrow Actions & Role Pane */}
         <div>
+          {/* Quick Role Switcher for Seamless Testing */}
+          <div
+            className="surface2"
+            style={{
+              padding: 14,
+              borderRadius: 14,
+              border: '2px dashed var(--border)',
+              marginBottom: 16,
+              background: '#FBF8F2'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)' }}>
+                🎭 Quick Role Switcher
+              </span>
+              <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                Active: <strong style={{ color: 'var(--accent)' }}>{currentUser?.alias || 'Guest'}</strong>
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {(personas || []).slice(0, 4).map(p => {
+                const isCurr = currentUser?.id === p.id;
+                const roleLabel = p.id === project.ownerId ? 'Owner' : (activeCommitment?.takerId === p.id ? 'Taker' : 'Builder');
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => switchPersona(p.id)}
+                    className="btn-sketch-sm"
+                    style={{
+                      fontSize: 11,
+                      padding: '4px 8px',
+                      background: isCurr ? 'var(--accent)' : '#FFFFFF',
+                      color: isCurr ? '#FFFFFF' : 'var(--text)',
+                      borderColor: 'var(--border)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {p.alias} ({roleLabel})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Action Card */}
           <div
             className="card"
@@ -952,7 +1060,7 @@ export async function getStaticPaths() {
   const ids = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12'];
   return {
     paths: ids.map(id => ({ params: { id } })),
-    fallback: false
+    fallback: process.env.GITHUB_PAGES === 'true' ? false : 'blocking'
   };
 }
 

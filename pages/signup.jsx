@@ -13,6 +13,23 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  React.useEffect(() => {
+    if (router.query.error) {
+      const err = router.query.error;
+      if (err === 'github_not_configured') {
+        setErrorMsg('GitHub OAuth credentials (GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET) are not configured in .env yet.');
+      } else if (err === 'state_mismatch') {
+        setErrorMsg('Security check failed: OAuth state mismatch. Please retry.');
+      } else if (err === 'access_denied') {
+        setErrorMsg('GitHub authorization was declined by user.');
+      } else if (err === 'account_banned') {
+        setErrorMsg('This account is suspended due to protocol violations.');
+      } else {
+        setErrorMsg(`GitHub OAuth error: ${err}`);
+      }
+    }
+  }, [router.query.error]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -66,18 +83,29 @@ export default function Signup() {
             fontSize: 13,
             fontWeight: 700,
             display: 'flex',
-            alignItems: 'center',
-            gap: 8,
+            flexDirection: 'column',
+            gap: 6,
             boxShadow: '2px 2px 0px #141414'
           }}
         >
-          <Icon name="alertTriangle" size={16} />
-          <span>{errorMsg}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name="alertTriangle" size={16} />
+            <span>{errorMsg}</span>
+          </div>
+          {router.query.error === 'github_not_configured' && (
+            <div style={{ marginTop: 4, fontSize: 12 }}>
+              <Link
+                href="/api/auth/github?dev=true"
+                style={{ color: '#1D4ED8', textDecoration: 'underline', fontWeight: 800 }}
+              >
+                Click here to test GitHub OAuth in Dev Simulation Mode →
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
+      <div
         className="card"
         style={{
           padding: 26,
@@ -90,6 +118,43 @@ export default function Signup() {
           boxShadow: '3px 4px 0px #141414'
         }}
       >
+        {/* GitHub OAuth Button */}
+        <a
+          href="/api/auth/github"
+          className="btn btn-block"
+          style={{
+            height: 44,
+            fontSize: 14.5,
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            background: '#24292F',
+            color: '#FFFFFF',
+            border: '2px solid #141414',
+            boxShadow: '2px 2.5px 0px #141414',
+            textDecoration: 'none',
+            fontWeight: 700,
+            cursor: 'pointer'
+          }}
+        >
+          <Icon name="github" size={20} />
+          <span>Sign up with GitHub</span>
+        </a>
+
+        <div style={{ display: 'flex', alignItems: 'center', margin: '2px 0', gap: 12 }}>
+          <div style={{ flex: 1, height: 1.5, background: 'rgba(20, 20, 20, 0.15)' }} />
+          <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>
+            Or with Email
+          </span>
+          <div style={{ flex: 1, height: 1.5, background: 'rgba(20, 20, 20, 0.15)' }} />
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
         <div>
           <label className="label">Your Email (Private & Hidden)</label>
           <input
@@ -164,6 +229,7 @@ export default function Signup() {
           Already have an account? <Link href="/login" style={{ color: 'var(--text)', fontWeight: 800, textDecoration: 'underline' }}>Log in</Link>
         </div>
       </form>
+      </div>
     </div>
   );
 }
