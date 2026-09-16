@@ -3,6 +3,7 @@ import path from 'path';
 import prisma from '../../../lib/prisma';
 import { parseSession } from '../../../lib/auth';
 import { recordLedgerEntry } from '../../../lib/ledger';
+import { enrichProject } from '../../../lib/mockFallback';
 
 /**
  * Unified Project Details & Actions Route Handler
@@ -84,7 +85,7 @@ async function handleGetProject(req, res, id) {
     const isTaker = activeCommitment && currentUserId === activeCommitment.takerId;
 
     return res.status(200).json({
-      project,
+      project: enrichProject(project),
       activeCommitment,
       userRole: isOwner ? 'OWNER' : isTaker ? 'TAKER' : 'GUEST'
     });

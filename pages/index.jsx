@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import Head from 'next/head';
 import Link from 'next/link';
 import ProjectCard from '../components/ProjectCard';
-import Icon from '../components/Icons';
+import { getLocalProjects } from '../lib/mockFallback';
+import {
+  Sparkles,
+  ArrowRight,
+  Compass,
+  BookOpen,
+  ShieldCheck,
+  GitFork
+} from 'lucide-react';
 
 export default function Home() {
   const [projects, setProjects] = useState([]);
@@ -9,327 +18,335 @@ export default function Home() {
 
   useEffect(() => {
     fetch('/api/projects')
-      .then(res => res.json())
-      .then(data => {
-        setProjects(data.projects || []);
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.projects && data.projects.length > 0) {
+          setProjects(data.projects);
+        } else {
+          setProjects(getLocalProjects());
+        }
       })
-      .catch(err => console.error(err))
+      .catch(() => {
+        setProjects(getLocalProjects());
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  // Display top 4 featured projects like in the screenshot
   const featuredProjects = projects.slice(0, 4);
 
   return (
-    <div style={{ paddingBottom: 70 }}>
-      {/* HERO SECTION matching reference */}
-      <section className="container" style={{ padding: '60px 0 36px' }}>
-        <div
+    <>
+      <Head>
+        <title>Digital Graveyard — Preserve. Understand. Revive.</title>
+        <meta
+          name="description"
+          content="A non-morbid preservation archive for abandoned software projects, postmortem autopsies, and open stewardship transfers."
+        />
+      </Head>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
+        {/* HERO SECTION */}
+        <section
           style={{
             display: 'grid',
-            gridTemplateColumns: '1.15fr 0.85fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
             gap: 40,
-            alignItems: 'center'
+            alignItems: 'center',
+            paddingTop: 8,
+            paddingBottom: 16
           }}
+          data-purpose="hero-section"
         >
-          {/* Left Column Text */}
-          <div>
-            <h1
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 800,
-                fontSize: 'clamp(38px, 4.4vw, 56px)',
-                lineHeight: 1.08,
-                letterSpacing: '-0.035em',
-                margin: '0 0 16px',
-                color: 'var(--text)'
-              }}
-            >
-              Every abandoned<br />project has a story.
-            </h1>
-
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 600,
-                color: 'var(--text)',
-                marginBottom: 16,
-                letterSpacing: '-0.01em'
-              }}
-            >
-              Preserve. Understand. Revive.
+          {/* Left Column: Headlines & Action CTAs */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'inline-flex' }}>
+              <span
+                className="sketch-tag"
+                style={{
+                  padding: '4px 12px',
+                  fontSize: 11.5,
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  gap: 6
+                }}
+              >
+                <Sparkles style={{ width: 14, height: 14, color: 'var(--color-ink)' }} />
+                <span>OPEN ARCHIVAL PRESERVATION LIBRARY</span>
+              </span>
             </div>
 
-            <p
+            <h1
               style={{
-                fontSize: 15,
-                color: 'var(--text-muted)',
-                lineHeight: 1.6,
-                maxWidth: 460,
-                margin: '0 0 28px'
+                fontFamily: 'var(--font-hand)',
+                fontSize: 'clamp(42px, 5.5vw, 68px)',
+                fontWeight: 700,
+                lineHeight: 1.06,
+                letterSpacing: '-0.02em',
+                margin: 0,
+                color: 'var(--color-ink)'
               }}
             >
-              Digital Graveyard is a home for forgotten digital projects — where their history is saved and their second life begins.
-            </p>
+              Every abandoned project has a story.
+            </h1>
 
-            <Link href="/browse" className="btn-sketch" style={{ fontSize: 15, padding: '12px 24px' }}>
-              Explore the Graveyard <span style={{ marginLeft: 4 }}>→</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <h2
+                style={{
+                  fontFamily: 'var(--font-hand)',
+                  fontSize: 'clamp(24px, 3vw, 32px)',
+                  fontWeight: 700,
+                  color: 'rgba(17, 17, 17, 0.9)',
+                  margin: 0
+                }}
+              >
+                Preserve. Understand. Revive.
+              </h2>
+              <p
+                style={{
+                  fontSize: 16,
+                  color: 'rgba(17, 17, 17, 0.82)',
+                  lineHeight: 1.6,
+                  maxWidth: 540,
+                  margin: 0,
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                Digital Graveyard is a digital archive of forgotten software ideas. We document historical autopsy reports, compute code health scores, and facilitate structured stewardship transfers.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, paddingTop: 4 }}>
+              <Link
+                href="/browse"
+                className="sketch-btn-primary"
+                style={{
+                  padding: '12px 24px',
+                  fontFamily: 'var(--font-hand)',
+                  fontSize: 24,
+                  fontWeight: 700,
+                  gap: 10,
+                  textDecoration: 'none'
+                }}
+              >
+                <span>Explore the Graveyard</span>
+                <ArrowRight style={{ width: 22, height: 22 }} />
+              </Link>
+
+              <Link
+                href="/browse/map"
+                className="sketch-btn"
+                style={{
+                  padding: '12px 24px',
+                  fontFamily: 'var(--font-hand)',
+                  fontSize: 24,
+                  fontWeight: 700,
+                  gap: 10,
+                  textDecoration: 'none'
+                }}
+              >
+                <Compass style={{ width: 20, height: 20, color: 'var(--color-ink)' }} />
+                <span>Graveyard Map</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Column: Hand-Drawn Sketch Illustration */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div
+              className="sketch-card"
+              style={{
+                padding: 24,
+                backgroundColor: 'var(--color-paper)',
+                width: '100%',
+                maxWidth: 420,
+                boxShadow: '4px 6px 0px #141414',
+                textAlign: 'center'
+              }}
+            >
+              {/* Organic Line Art SVG Graphic */}
+              <svg
+                style={{ width: '100%', height: 240, color: 'var(--color-ink)', fill: 'none', stroke: 'currentColor', margin: '0 auto' }}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 320 240"
+              >
+                {/* Sun & Clouds */}
+                <circle cx="260" cy="50" r="18" strokeDasharray="3 3" />
+                <path d="M 230 45 C 240 35, 270 35, 280 45" />
+                <path d="M 40 40 Q 60 25 80 40 Q 100 25 120 40 Z" />
+
+                {/* Bare Tree */}
+                <path d="M 50 200 L 50 120 M 50 160 L 25 130 M 50 140 L 75 110 M 50 180 L 30 165" />
+
+                {/* Central Main Tombstone */}
+                <path d="M 110 200 L 110 90 C 110 50, 210 50, 210 90 L 210 200 Z" strokeWidth="2.5" fill="#fdfbf7" />
+                {/* Base Line */}
+                <path d="M 80 200 L 240 200" strokeWidth="3" />
+
+                {/* Inked Motto on Stone */}
+                <text x="160" y="115" textAnchor="middle" style={{ fontFamily: 'var(--font-hand)', fontSize: 16, fill: 'currentColor', fontWeight: 700 }} stroke="none">
+                  Not forgotten.
+                </text>
+                <text x="160" y="140" textAnchor="middle" style={{ fontFamily: 'var(--font-hand)', fontSize: 16, fill: 'currentColor', fontWeight: 700 }} stroke="none">
+                  Just waiting.
+                </text>
+                <path d="M 140 155 L 180 155" strokeWidth="1.2" />
+
+                {/* Side Tombstones & Grass Doodles */}
+                <path d="M 85 200 L 85 160 C 85 140, 105 140, 105 160 L 105 200" />
+                <path d="M 215 200 L 215 150 C 215 130, 235 130, 235 150 L 235 200" />
+                <path d="M 20 200 Q 35 185 40 200 M 100 200 Q 115 190 120 200 M 240 200 Q 255 185 260 200" />
+              </svg>
+
+              <p style={{ fontFamily: 'var(--font-hand)', fontSize: 22, fontWeight: 700, margin: '8px 0 2px', color: 'var(--color-ink)' }}>
+                Digital Preservation Vault
+              </p>
+              <p style={{ fontSize: 11.5, fontFamily: 'var(--font-mono)', color: 'rgba(17, 17, 17, 0.65)', margin: 0 }}>
+                Preserving technical lineage & ownership provenance
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Software Lifecycle Timeline Banner */}
+        <section
+          className="sketch-card-static"
+          style={{
+            padding: '24px 20px',
+            backgroundColor: 'rgba(244, 239, 230, 0.4)',
+            textAlign: 'center'
+          }}
+        >
+          <div style={{ marginBottom: 14 }}>
+            <h3 style={{ fontFamily: 'var(--font-hand)', fontSize: 26, fontWeight: 700, margin: 0, color: 'var(--color-ink)' }}>
+              The Software Lifecycle Timeline
+            </h3>
+            <p style={{ fontSize: 11.5, fontFamily: 'var(--font-mono)', color: 'rgba(17, 17, 17, 0.65)', margin: '4px 0 0' }}>
+              Every project passes through archival stages
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              fontWeight: 700
+            }}
+          >
+            <span className="sketch-tag" style={{ padding: '6px 14px', backgroundColor: 'var(--color-paper)' }}>1. Idea</span>
+            <span>→</span>
+            <span className="sketch-tag" style={{ padding: '6px 14px', backgroundColor: 'var(--color-paper)' }}>2. Prototype</span>
+            <span>→</span>
+            <span className="sketch-tag" style={{ padding: '6px 14px', backgroundColor: 'var(--color-paper)' }}>3. Launch</span>
+            <span>→</span>
+            <span className="sketch-tag" style={{ padding: '6px 14px', backgroundColor: 'var(--color-paper)' }}>4. Peak</span>
+            <span>→</span>
+            <span className="sketch-tag" style={{ padding: '6px 14px', backgroundColor: 'var(--color-paper)' }}>5. Decline</span>
+            <span>→</span>
+            <span className="sketch-tag" style={{ padding: '6px 14px', backgroundColor: 'var(--color-paper)' }}>6. Archive</span>
+            <span>→</span>
+            <span
+              className="sketch-tag"
+              style={{
+                padding: '6px 14px',
+                backgroundColor: 'var(--color-ink)',
+                color: 'var(--color-paper)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              🌱 7. Revival?
+            </span>
+          </div>
+        </section>
+
+        {/* Hand-Drawn Organic Divider */}
+        <div className="sketch-divider" />
+
+        {/* Featured Preserved Artifacts Grid */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-hand)', fontSize: 36, fontWeight: 700, margin: 0, color: 'var(--color-ink)' }}>
+                Featured Preserved Artifacts
+              </h2>
+              <p style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'rgba(17, 17, 17, 0.65)', margin: '2px 0 0' }}>
+                Inspected by Project Archaeologists
+              </p>
+            </div>
+
+            <Link
+              href="/browse"
+              style={{
+                fontFamily: 'var(--font-hand)',
+                fontSize: 22,
+                fontWeight: 700,
+                color: 'var(--color-ink)',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <span>View all artifacts</span>
+              <ArrowRight style={{ width: 20, height: 20 }} />
             </Link>
           </div>
 
-          {/* Right Column Hand-Drawn SVG Illustration */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <HandDrawnGraveyardScene />
-          </div>
-        </div>
-      </section>
-
-      {/* Horizontal Divider Line matching screenshot */}
-      <div className="container">
-        <hr className="sketch-divider" />
-      </div>
-
-      {/* FEATURED PROJECTS SECTION matching reference */}
-      <section className="container" style={{ paddingTop: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 800,
-              fontSize: 26,
-              letterSpacing: '-0.03em',
-              margin: 0,
-              color: 'var(--text)'
-            }}
-          >
-            Featured Projects
-          </h2>
-
-          <Link
-            href="/browse"
-            style={{
-              fontSize: 14.5,
-              fontWeight: 700,
-              color: 'var(--text)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4
-            }}
-          >
-            View all <span>→</span>
-          </Link>
-        </div>
-
-        {/* 4 Cards Grid */}
-        {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-            {[1, 2, 3, 4].map(i => (
-              <div
-                key={i}
-                className="card-sketch"
-                style={{ height: 260, background: '#FFFFFF', opacity: 0.6 }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: 20
-            }}
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
             {featuredProjects.map((project, idx) => (
               <ProjectCard key={project.id} project={project} index={idx} />
             ))}
           </div>
-        )}
-      </section>
-    </div>
-  );
-}
+        </section>
 
-/**
- * Hand-Drawn Ink Illustration:
- * - Solid black circular moon
- * - Wavy horizontal clouds
- * - Bare spooky twisted branch tree
- * - Grassy mounds and tufts
- * - Curved gravestone with text:
- *   "Not forgotten. Just waiting."
- */
-function HandDrawnGraveyardScene() {
-  return (
-    <svg
-      viewBox="0 0 460 300"
-      width="100%"
-      height="auto"
-      style={{ maxWidth: 440, overflow: 'visible' }}
-    >
-      {/* Hand-Drawn Solid Moon */}
-      <circle cx="320" cy="70" r="14" fill="#141414" />
-
-      {/* Sketched Cloud Lines */}
-      <path
-        d="M275 95 C 295 90, 340 92, 365 95"
-        stroke="#141414"
-        strokeWidth="1.6"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M285 118 C 305 116, 325 119, 340 117"
-        stroke="#141414"
-        strokeWidth="1.6"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M280 135 C 295 133, 310 136, 330 134"
-        stroke="#141414"
-        strokeWidth="1.4"
-        fill="none"
-        strokeLinecap="round"
-      />
-
-      {/* Bare Spooky Tree */}
-      <g stroke="#141414" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none">
-        {/* Trunk */}
-        <path d="M380 205 Q 382 170 385 135 Q 386 115 390 95" strokeWidth="3" />
-        <path d="M385 205 Q 386 170 388 135 Q 389 115 390 95" strokeWidth="2.2" />
-        
-        {/* Left main branch */}
-        <path d="M386 145 Q 370 135 365 115 Q 360 100 355 85" />
-        <path d="M365 115 Q 370 105 375 90" />
-        <path d="M358 95 Q 350 90 345 80" />
-
-        {/* Right main branch */}
-        <path d="M388 135 Q 405 125 412 110 Q 418 95 422 80" />
-        <path d="M408 118 Q 412 108 418 98" />
-        <path d="M390 100 Q 400 85 405 70" />
-        
-        {/* Top twigs */}
-        <path d="M390 95 Q 385 80 380 65" />
-        <path d="M390 95 Q 395 78 400 68" />
-      </g>
-
-      {/* Ground Horizon Contours */}
-      <path
-        d="M245 190 Q 255 180 265 190 Q 275 200 295 195"
-        stroke="#141414"
-        strokeWidth="1.6"
-        fill="none"
-      />
-      <path
-        d="M370 195 Q 385 185 400 195 Q 415 190 425 200"
-        stroke="#141414"
-        strokeWidth="1.6"
-        fill="none"
-      />
-
-      {/* Distant Hills / Grass mounds */}
-      <g stroke="#141414" strokeWidth="1.6" fill="none">
-        {/* Far left grass tufts */}
-        <path d="M255 190 l 3 -8 l 3 8 l 3 -9 l 3 9" />
-        <path d="M270 185 Q 278 172 285 185" />
-        <path d="M288 185 Q 296 172 304 185" />
-        <path d="M305 188 l 3 -7 l 3 7 l 3 -8 l 3 8" />
-        
-        {/* Grass patch far left */}
-        <path d="M260 215 l 4 -6 l 4 6 l 4 -8 l 4 8" />
-        
-        {/* Right side grass tufts */}
-        <path d="M390 200 l 3 -8 l 3 8 l 3 -9 l 3 9" />
-      </g>
-
-      {/* Centered Tombstone Structure */}
-      <g>
-        {/* Tombstone body */}
-        <path
-          d="M315 220 
-             V 140 
-             C 315 105, 365 105, 365 140 
-             V 220"
-          fill="#FFFFFF"
-          stroke="#141414"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Hand-lettered inscription: "Not forgotten. Just waiting." */}
-        <text
-          x="340"
-          y="136"
-          fontFamily="var(--font-hand), 'Patrick Hand', cursive"
-          fontSize="12.5"
-          fontWeight="700"
-          textAnchor="middle"
-          fill="#141414"
+        {/* Philosophy & Transparency Principles Banner */}
+        <section
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 24,
+            paddingTop: 8
+          }}
         >
-          Not
-        </text>
-        <text
-          x="340"
-          y="152"
-          fontFamily="var(--font-hand), 'Patrick Hand', cursive"
-          fontSize="12.5"
-          fontWeight="700"
-          textAnchor="middle"
-          fill="#141414"
-        >
-          forgotten.
-        </text>
-        <text
-          x="340"
-          y="168"
-          fontFamily="var(--font-hand), 'Patrick Hand', cursive"
-          fontSize="12.5"
-          fontWeight="700"
-          textAnchor="middle"
-          fill="#141414"
-        >
-          Just
-        </text>
-        <text
-          x="340"
-          y="184"
-          fontFamily="var(--font-hand), 'Patrick Hand', cursive"
-          fontSize="12.5"
-          fontWeight="700"
-          textAnchor="middle"
-          fill="#141414"
-        >
-          waiting.
-        </text>
+          <div className="sketch-card-static" style={{ padding: 22, backgroundColor: 'var(--color-paper)' }}>
+            <BookOpen style={{ width: 28, height: 28, color: 'var(--color-ink)', marginBottom: 10, strokeWidth: 1.8 }} />
+            <h3 style={{ fontFamily: 'var(--font-hand)', fontSize: 24, fontWeight: 700, margin: '0 0 6px', color: 'var(--color-ink)' }}>
+              Archival Autopsy
+            </h3>
+            <p style={{ fontSize: 13, color: 'rgba(17, 17, 17, 0.82)', lineHeight: 1.5, margin: 0, fontFamily: 'var(--font-sans)' }}>
+              Detailed postmortems analyze peak commit activity, maintainer turnover, and exact decline reasons so future builders don't repeat mistakes.
+            </p>
+          </div>
 
-        {/* Shadow base under tombstone */}
-        <path
-          d="M310 220 C 320 228, 360 228, 370 220"
-          stroke="#141414"
-          strokeWidth="2"
-          fill="none"
-        />
-      </g>
+          <div className="sketch-card-static" style={{ padding: 22, backgroundColor: 'var(--color-paper)' }}>
+            <ShieldCheck style={{ width: 28, height: 28, color: 'var(--color-ink)', marginBottom: 10, strokeWidth: 1.8 }} />
+            <h3 style={{ fontFamily: 'var(--font-hand)', fontSize: 24, fontWeight: 700, margin: '0 0 6px', color: 'var(--color-ink)' }}>
+              Immutable Provenance
+            </h3>
+            <p style={{ fontSize: 13, color: 'rgba(17, 17, 17, 0.82)', lineHeight: 1.5, margin: 0, fontFamily: 'var(--font-sans)' }}>
+              Every listing records an append-only cryptographic ownership chain tracing original creators, curators, and new adopting diggers.
+            </p>
+          </div>
 
-      {/* Dense Grass Tufts around the base of tombstone matching screenshot */}
-      <g stroke="#141414" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none">
-        <path d="M295 220 L 298 206 L 302 222 L 306 204 L 310 224" />
-        <path d="M308 224 L 312 208 L 316 226 L 320 205 L 324 225" />
-        <path d="M322 225 L 327 210 L 332 226 L 338 207 L 344 226" />
-        <path d="M342 226 L 347 212 L 352 227 L 358 209 L 364 225" />
-        <path d="M362 225 L 366 208 L 371 226 L 376 205 L 382 223" />
-        <path d="M380 223 L 385 210 L 390 225 L 395 212 L 400 224" />
-        <path d="M398 224 L 404 214 L 409 225 L 415 218 L 420 225" />
-      </g>
-
-      {/* Ground dots / pebble textures */}
-      <circle cx="280" cy="205" r="1" fill="#141414" />
-      <circle cx="286" cy="208" r="0.8" fill="#141414" />
-      <circle cx="370" cy="180" r="0.8" fill="#141414" />
-      <circle cx="375" cy="183" r="1" fill="#141414" />
-      <circle cx="410" cy="185" r="1" fill="#141414" />
-      <circle cx="414" cy="188" r="0.8" fill="#141414" />
-    </svg>
+          <div className="sketch-card-static" style={{ padding: 22, backgroundColor: 'var(--color-paper)' }}>
+            <GitFork style={{ width: 28, height: 28, color: 'var(--color-ink)', marginBottom: 10, strokeWidth: 1.8 }} />
+            <h3 style={{ fontFamily: 'var(--font-hand)', fontSize: 24, fontWeight: 700, margin: '0 0 6px', color: 'var(--color-ink)' }}>
+              Fork-Friendly License
+            </h3>
+            <p style={{ fontSize: 13, color: 'rgba(17, 17, 17, 0.82)', lineHeight: 1.5, margin: 0, fontFamily: 'var(--font-sans)' }}>
+              Permissively licensed codebases (MIT/Apache/BSD) allow instant forks without transfer friction. Build on top of proven ideas.
+            </p>
+          </div>
+        </section>
+      </div>
+    </>
   );
 }

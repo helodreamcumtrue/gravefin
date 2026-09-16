@@ -4,11 +4,16 @@ import Link from 'next/link';
 import { useApp } from '../../context/AppContext';
 import EscrowStatusBanner from '../../components/EscrowStatusBanner';
 import MilestoneTracker from '../../components/MilestoneTracker';
+import AutopsyChart from '../../components/AutopsyChart';
+import CauseOfDeclineTags from '../../components/CauseOfDeclineTags';
+import ProvenanceTimeline from '../../components/ProvenanceTimeline';
+import HandoverChecklist from '../../components/HandoverChecklist';
 import Icon from '../../components/Icons';
+import { getLocalProjects, saveLocalProjects } from '../../lib/mockFallback';
 
-export default function ProjectDetails() {
+export default function ProjectDetails({ projectId }) {
   const router = useRouter();
-  const { id } = router.query;
+  const id = projectId || router.query.id;
   const { currentUser, addToast, refreshUser } = useApp();
 
   const [project, setProject] = useState(null);
@@ -34,17 +39,32 @@ export default function ProjectDetails() {
       const res = await fetch(`/api/projects/${id}`, {
         headers: currentUser ? { 'x-user-id': currentUser.id } : {}
       });
-      if (!res.ok) throw new Error('Project not found');
-      const data = await res.json();
-      setProject(data.project);
-      setActiveCommitment(data.activeCommitment);
-      setUserRole(data.userRole);
+      if (res.ok) {
+        const data = await res.json();
+        setProject(data.project);
+        setActiveCommitment(data.activeCommitment);
+        setUserRole(data.userRole);
+        return;
+      }
     } catch (err) {
-      console.error(err);
-      addToast(err.message, 'error');
-    } finally {
-      setLoading(false);
+      // In static / GitHub Pages demo mode
     }
+
+    // Fallback in static / GitHub Pages demo mode
+    const allProjects = getLocalProjects();
+    const target = allProjects.find(p => p.id === id) || allProjects[0];
+    if (target) {
+      setProject(target);
+      const commitment = target.commitments?.[0] || null;
+      setActiveCommitment(commitment);
+      let role = 'GUEST';
+      if (currentUser) {
+        if (currentUser.id === target.ownerId) role = 'OWNER';
+        else if (commitment && commitment.takerId === currentUser.id) role = 'TAKER';
+      }
+      setUserRole(role);
+    }
+    setLoading(false);
   };
 
   // 1. Taker claims project
@@ -53,7 +73,7 @@ export default function ProjectDetails() {
       addToast('Please select or log in to a persona to claim a project', 'error');
       return;
     }
-    if (currentUser.credits < project.stakeRequired) {
+    if (currentUser.credits < (project?.stakeRequired || 0)) {
       addToast(`Insufficient credits. Required: ${project.stakeRequired}, Available: ${currentUser.credits}`, 'error');
       return;
     }
@@ -64,17 +84,42 @@ export default function ProjectDetails() {
         method: 'POST',
         headers: { 'x-user-id': currentUser.id }
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to claim project');
-
-      addToast('Claim submitted! Awaiting owner approval to lock escrow.', 'success');
-      await fetchProjectDetail();
-      await refreshUser();
+      if (res.ok) {
+        addToast('Claim submitted! Awaiting owner approval to lock escrow.', 'success');
+        await fetchProjectDetail();
+        await refreshUser();
+        return;
+      }
     } catch (err) {
-      addToast(err.message, 'error');
-    } finally {
-      setActionLoading(false);
+      // Handled in demo fallback below
     }
+
+    // Fallback for static demo mode
+    const allProjects = getLocalProjects();
+    const updated = allProjects.map(p => {
+      if (p.id === project.id) {
+        return {
+          ...p,
+          status: 'PENDING_APPROVAL',
+          commitments: [
+            {
+              id: `c-${Date.now()}`,
+              projectId: p.id,
+              takerId: currentUser.id,
+              taker: currentUser,
+              status: 'PENDING_APPROVAL',
+              stakeLocked: 0,
+              committedAt: new Date().toISOString()
+            }
+          ]
+        };
+      }
+      return p;
+    });
+    saveLocalProjects(updated);
+    addToast('Claim submitted! Awaiting owner approval (Demo Mode)', 'success');
+    await fetchProjectDetail();
+    setActionLoading(false);
   };
 
   // 2. Owner approves commitment
@@ -94,17 +139,39 @@ export default function ProjectDetails() {
         },
         body: JSON.stringify({ commitmentId: activeCommitment.id })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to approve commitment');
-
-      addToast(data.message, 'success');
-      await fetchProjectDetail();
-      await refreshUser();
+      if (res.ok) {
+        const data = await res.json();
+        addToast(data.message, 'success');
+        await fetchProjectDetail();
+        await refreshUser();
+        return;
+      }
     } catch (err) {
-      addToast(err.message, 'error');
-    } finally {
-      setActionLoading(false);
+      // Handled in fallback
     }
+
+    // Fallback for static demo mode
+    const allProjects = getLocalProjects();
+    const updated = allProjects.map(p => {
+      if (p.id === project.id) {
+        return {
+          ...p,
+          status: 'ACTIVE',
+          commitments: (p.commitments || []).map(c => ({
+            ...c,
+            status: 'ACTIVE',
+            stakeLocked: p.stakeRequired,
+            approvedAt: new Date().toISOString(),
+            ghostDeadlineAt: new Date(Date.now() + 14 * 86400000).toISOString()
+          }))
+        };
+      }
+      return p;
+    });
+    saveLocalProjects(updated);
+    addToast('Commitment approved and escrow stake locked! (Demo Mode)', 'success');
+    await fetchProjectDetail();
+    setActionLoading(false);
   };
 
   // 3. Owner rejects commitment
@@ -124,16 +191,31 @@ export default function ProjectDetails() {
         },
         body: JSON.stringify({ commitmentId: activeCommitment.id })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to reject commitment');
-
-      addToast(data.message, 'info');
-      await fetchProjectDetail();
+      if (res.ok) {
+        const data = await res.json();
+        addToast(data.message, 'info');
+        await fetchProjectDetail();
+        return;
+      }
     } catch (err) {
-      addToast(err.message, 'error');
-    } finally {
-      setActionLoading(false);
+      // Handled in fallback
     }
+
+    const allProjects = getLocalProjects();
+    const updated = allProjects.map(p => {
+      if (p.id === project.id) {
+        return {
+          ...p,
+          status: 'LISTED',
+          commitments: []
+        };
+      }
+      return p;
+    });
+    saveLocalProjects(updated);
+    addToast('Commitment rejected and project relisted (Demo Mode)', 'info');
+    await fetchProjectDetail();
+    setActionLoading(false);
   };
 
   // 4. Taker withdraws pre-approval
@@ -149,17 +231,28 @@ export default function ProjectDetails() {
         method: 'POST',
         headers: { 'x-user-id': currentUser.id }
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to withdraw');
-
-      addToast(data.message, 'info');
-      await fetchProjectDetail();
-      await refreshUser();
+      if (res.ok) {
+        const data = await res.json();
+        addToast(data.message, 'info');
+        await fetchProjectDetail();
+        await refreshUser();
+        return;
+      }
     } catch (err) {
-      addToast(err.message, 'error');
-    } finally {
-      setActionLoading(false);
+      // Handled in fallback
     }
+
+    const allProjects = getLocalProjects();
+    const updated = allProjects.map(p => {
+      if (p.id === project.id) {
+        return { ...p, status: 'LISTED', commitments: [] };
+      }
+      return p;
+    });
+    saveLocalProjects(updated);
+    addToast('Commitment withdrawn (Demo Mode)', 'info');
+    await fetchProjectDetail();
+    setActionLoading(false);
   };
 
   // 5. Taker submits completed work
@@ -182,17 +275,40 @@ export default function ProjectDetails() {
           deliverableUrl: submissionUrl
         })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to submit deliverable');
-
-      addToast(data.message, 'success');
-      setSubmitModalOpen(false);
-      await fetchProjectDetail();
+      if (res.ok) {
+        const data = await res.json();
+        addToast(data.message, 'success');
+        setSubmitModalOpen(false);
+        await fetchProjectDetail();
+        return;
+      }
     } catch (err) {
-      addToast(err.message, 'error');
-    } finally {
-      setActionLoading(false);
+      // Handled in fallback
     }
+
+    const allProjects = getLocalProjects();
+    const updated = allProjects.map(p => {
+      if (p.id === project.id) {
+        return {
+          ...p,
+          status: 'SUBMITTED',
+          reviewTimeoutAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+          commitments: (p.commitments || []).map(c => ({
+            ...c,
+            status: 'SUBMITTED',
+            submittedAt: new Date().toISOString(),
+            submissionNotes,
+            submissionUrl
+          }))
+        };
+      }
+      return p;
+    });
+    saveLocalProjects(updated);
+    addToast('Deliverable submitted for review! (Demo Mode)', 'success');
+    setSubmitModalOpen(false);
+    await fetchProjectDetail();
+    setActionLoading(false);
   };
 
   // 6. Owner verifies deliverable (approve or flagBadFaith)
@@ -212,23 +328,56 @@ export default function ProjectDetails() {
         },
         body: JSON.stringify({ decision })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Verification failed');
-
-      addToast(data.message, decision === 'approve' ? 'success' : 'warning');
-      setFlagModalOpen(false);
-      await fetchProjectDetail();
-      await refreshUser();
+      if (res.ok) {
+        const data = await res.json();
+        addToast(data.message, decision === 'approve' ? 'success' : 'warning');
+        setFlagModalOpen(false);
+        await fetchProjectDetail();
+        await refreshUser();
+        return;
+      }
     } catch (err) {
-      addToast(err.message, 'error');
-    } finally {
-      setActionLoading(false);
+      // Handled in fallback
     }
+
+    const allProjects = getLocalProjects();
+    const updated = allProjects.map(p => {
+      if (p.id === project.id) {
+        if (decision === 'approve') {
+          return {
+            ...p,
+            status: 'COMPLETED',
+            completion: 100,
+            commitments: (p.commitments || []).map(c => ({
+              ...c,
+              status: 'COMPLETED',
+              resolvedAt: new Date().toISOString()
+            }))
+          };
+        } else {
+          return {
+            ...p,
+            status: 'GHOSTED_RELISTED',
+            commitments: (p.commitments || []).map(c => ({
+              ...c,
+              status: 'FLAGGED',
+              resolvedAt: new Date().toISOString()
+            }))
+          };
+        }
+      }
+      return p;
+    });
+    saveLocalProjects(updated);
+    addToast(decision === 'approve' ? 'Work approved & stake released! (Demo Mode)' : 'Forfeited & relisted! (Demo Mode)', 'success');
+    setFlagModalOpen(false);
+    await fetchProjectDetail();
+    setActionLoading(false);
   };
 
   // Download project source code
   const handleDownload = () => {
-    window.open(`/api/projects/${project.id}/download`, '_blank');
+    window.open('/downloads/source.zip', '_blank');
   };
 
   if (loading) {
@@ -404,6 +553,26 @@ export default function ProjectDetails() {
                 </span>
               ))}
             </div>
+          </div>
+
+          {/* Cause of Decline Diagnostic Tags */}
+          <div className="sketch-card-static" style={{ padding: 20, marginBottom: 24, backgroundColor: 'var(--color-paper)' }}>
+            <CauseOfDeclineTags tags={project.autopsyReport?.causeOfDeclineTags} />
+          </div>
+
+          {/* Autopsy Report Forensic Diagnostic */}
+          <div style={{ marginBottom: 24 }}>
+            <AutopsyChart report={project.autopsyReport} />
+          </div>
+
+          {/* Stewardship Handover Protocol & Transformation */}
+          <div style={{ marginBottom: 24 }}>
+            <HandoverChecklist project={project} />
+          </div>
+
+          {/* Append-Only Provenance Timeline */}
+          <div style={{ marginBottom: 24 }}>
+            <ProvenanceTimeline nodes={project.provenance} />
           </div>
 
           {/* Milestones Section */}
@@ -778,3 +947,20 @@ export default function ProjectDetails() {
     </div>
   );
 }
+
+export async function getStaticPaths() {
+  const ids = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12'];
+  return {
+    paths: ids.map(id => ({ params: { id } })),
+    fallback: false
+  };
+}
+
+export async function getStaticProps({ params }) {
+  return {
+    props: {
+      projectId: params.id
+    }
+  };
+}
+

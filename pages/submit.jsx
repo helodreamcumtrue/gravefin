@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useApp } from '../context/AppContext';
 import Icon from '../components/Icons';
+import { getLocalProjects, saveLocalProjects } from '../lib/mockFallback';
 
 const CATEGORIES = ['Web', 'Mobile', 'AI/ML', 'IoT', 'Game', 'Cybersecurity'];
 
@@ -47,24 +48,35 @@ export default function SubmitProject() {
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = reader.result.split(',')[1];
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(currentUser ? { 'x-user-id': currentUser.id } : {})
-          },
-          body: JSON.stringify({
-            fileName: file.name,
-            fileBase64: base64
-          })
-        });
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(currentUser ? { 'x-user-id': currentUser.id } : {})
+            },
+            body: JSON.stringify({
+              fileName: file.name,
+              fileBase64: base64
+            })
+          });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload failed');
+          if (res.ok) {
+            const data = await res.json();
+            setFileName(file.name);
+            setFileUrl(data.fileUrl);
+            addToast(`Uploaded ${file.name} successfully!`, 'success');
+            setUploading(false);
+            return;
+          }
+        } catch (e) {
+          // Handled in fallback below
+        }
 
+        // Demo fallback
         setFileName(file.name);
-        setFileUrl(data.fileUrl);
-        addToast(`Uploaded ${file.name} successfully!`, 'success');
+        setFileUrl('/downloads/source.zip');
+        addToast(`Uploaded ${file.name} (Demo Mode)!`, 'success');
         setUploading(false);
       };
       reader.readAsDataURL(file);
@@ -93,30 +105,58 @@ export default function SubmitProject() {
       setSubmitting(true);
       const tagsArray = techTags.split(',').map(s => s.trim()).filter(Boolean);
 
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(currentUser ? { 'x-user-id': currentUser.id } : {})
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          category,
-          completion: Number(completion),
-          techTags: JSON.stringify(tagsArray),
-          stakeRequired: Number(stakeRequired),
-          fileName: fileName.trim() || 'project.zip',
-          fileUrl,
-          milestoneMode
-        })
-      });
+      try {
+        const res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentUser ? { 'x-user-id': currentUser.id } : {})
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim(),
+            category,
+            completion: Number(completion),
+            techTags: JSON.stringify(tagsArray),
+            stakeRequired: Number(stakeRequired),
+            fileName: fileName.trim() || 'project.zip',
+            fileUrl,
+            milestoneMode
+          })
+        });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to submit project');
+        if (res.ok) {
+          const data = await res.json();
+          addToast('Project listed in the Graveyard successfully!', 'success');
+          router.push(`/project/${data.project.id}`);
+          return;
+        }
+      } catch (err) {
+        // Handled in demo fallback below
+      }
 
-      addToast('Project listed in the Graveyard successfully!', 'success');
-      router.push(`/project/${data.project.id}`);
+      // Demo fallback for GitHub Pages static export
+      const newProj = {
+        id: `p-${Date.now()}`,
+        ownerId: currentUser.id,
+        owner: currentUser,
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        completion: Number(completion),
+        techTags: JSON.stringify(tagsArray),
+        stakeRequired: Number(stakeRequired),
+        fileName: fileName.trim() || 'project.zip',
+        fileUrl: fileUrl || '/downloads/source.zip',
+        milestoneMode,
+        status: 'LISTED',
+        createdAt: new Date().toISOString(),
+        commitments: []
+      };
+      const allProjects = getLocalProjects();
+      saveLocalProjects([newProj, ...allProjects]);
+      addToast('Project listed in the Graveyard successfully! (Demo Mode)', 'success');
+      router.push('/browse');
     } catch (err) {
       addToast(err.message, 'error');
     } finally {

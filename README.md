@@ -25,8 +25,9 @@ Gravefin is a production-grade, trustless marketplace that resurrects abandoned 
 ## 🛠️ Technology Stack
 
 - **Framework**: Next.js 14 (Pages Router)
-- **Frontend**: React 18 with CSS Design Tokens (Ink Parchment / Cyber-Noir dark aesthetic)
-- **Database / ORM**: Prisma ORM with Neon Serverless PostgreSQL
+- **Frontend**: React 18 with Parchment Desk & Hand-Drawn Sketch Design Tokens (`Patrick Hand`, `Architects Daughter`, `Inter`)
+- **Visual Features**: 2D Excavation Cartography Quadrant Map, Forensic Autopsies, Provenance Timelines, Archivist Workbench, Community Leaderboards
+- **Database / ORM**: Prisma ORM with Neon Serverless PostgreSQL & local fallback
 - **Security**: Bcrypt password hashing, HMAC SHA-256 session signatures, HttpOnly cookie serialization
 
 ---
@@ -35,30 +36,40 @@ Gravefin is a production-grade, trustless marketplace that resurrects abandoned 
 
 ```
 ├── components/          # Reusable UI components
-│   ├── EscrowStatusBanner.jsx
-│   ├── Footer.jsx
-│   ├── Icons.jsx
-│   ├── LedgerTable.jsx
-│   ├── MilestoneTracker.jsx
-│   ├── Navbar.jsx
-│   └── ProjectCard.jsx
+│   ├── AutopsyChart.jsx       # Commit activity timeline & forensic diagnostic
+│   ├── CauseOfDeclineTags.jsx # Primary decline reason badges & icons
+│   ├── EscrowStatusBanner.jsx # Real-time state machine progress header
+│   ├── Footer.jsx             # Digital Graveyard archive footer
+│   ├── GraveyardMap.jsx       # 2D Cartesian excavation quadrant map
+│   ├── HandoverChecklist.jsx  # Dual sign-off protocol & blooming tree animation
+│   ├── Icons.jsx              # Hand-drawn SVG icon suite
+│   ├── LedgerTable.jsx        # Audit ledger transaction table
+│   ├── MilestoneTracker.jsx   # Milestone delivery checklist
+│   ├── Navbar.jsx             # Archive navigation & campus scope toggle
+│   ├── ProjectCard.jsx        # Tombstone card with headstone frame & health score
+│   └── ProvenanceTimeline.jsx # Append-only cryptographic hash chain
 ├── context/             # Global application & auth context (AppContext.jsx)
 ├── lib/                 # Core server libraries
 │   ├── auth.js          # Cryptographic session tokens, cookies, hashing
 │   ├── ledger.js        # Append-only transaction ledger & penalty logic
+│   ├── mockFallback.js  # Enriched local dataset for demo & static export
 │   └── prisma.js        # Prisma client singleton instance
 ├── pages/
-│   ├── _app.jsx         # App wrapper & theme providers
-│   ├── _document.jsx    # Custom HTML document & font loaders
-│   ├── index.jsx        # Landing hero & market metrics
-│   ├── browse.jsx       # Project catalog with category & status filters
+│   ├── _app.jsx         # App wrapper & framed parchment desktop canvas
+│   ├── _document.jsx    # Custom HTML document & Google Font loaders
+│   ├── index.jsx        # Landing hero, lifecycle banner & philosophy pillars
+│   ├── browse.jsx       # Project catalog with category, status & stake filters
+│   ├── browse/map.jsx   # Dedicated 2D cartography quadrant map page
 │   ├── dashboard.jsx    # User profile, stakes, active claims & ledger
+│   ├── leaderboard.jsx  # Community preservation rankings table & badges
 │   ├── login.jsx        # Digger authentication & quick persona login
+│   ├── map.jsx          # Shortcut route for cartography quadrant map
 │   ├── signup.jsx       # Anonymous account creation (+500 credit grant)
 │   ├── simulator.jsx    # Interactive cron & timeout execution sandbox
 │   ├── submit.jsx       # Dead repository listing flow
+│   ├── workbench.jsx    # Archivist workbench with specimens & marginalia notes
 │   ├── project/
-│   │   └── [id].jsx     # Project detail, escrow state machine & downloads
+│   │   └── [id].jsx     # Forensic autopsy, escrow actions, handover & provenance
 │   └── api/
 │       ├── auth/
 │       │   └── [action].js   # Consolidated auth (login, signup, logout, me, personas, switch)

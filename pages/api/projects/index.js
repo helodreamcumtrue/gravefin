@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { parseSession } from '../../../lib/auth';
+import { enrichProject } from '../../../lib/mockFallback';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
         );
       }
 
-      return res.status(200).json({ projects: filtered });
+      return res.status(200).json({ projects: filtered.map((p, idx) => enrichProject(p, idx)) });
     } catch (err) {
       console.error('Error listing projects:', err);
       return res.status(500).json({ error: 'Internal server error' });
