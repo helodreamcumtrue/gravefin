@@ -59,6 +59,7 @@ Because Vercel runs Next.js on Serverless Functions with a read-only, ephemeral 
 3. Set your environment variables when prompted or in the Vercel project dashboard:
    - `DATABASE_URL`: your PostgreSQL connection string (or `./prisma/dev.db` for demo).
    - `CRON_SECRET`: `graveyard_secret_key`
+   - `GITHUB_TOKEN`: a GitHub fine-grained personal access token with read-only public repository metadata access.
 4. To deploy to production:
    ```bash
    npx vercel --prod
@@ -95,3 +96,5 @@ Vercel will automatically read `vercel.json` and schedule the daily automated ti
 - **Path**: `/api/cron/timeout-check`
 - **Schedule**: Every day at midnight UTC (`0 0 * * *`)
 - **Action**: Deterministically checks for 14-day taker timeouts and 7-day owner review timeouts.
+
+The same daily job refreshes only projects that already have both `githubRepoUrl` and `githubAnalyzedAt`. It uses the GitHub GraphQL API to update repository metrics, recalculate the revival score, regenerate the autopsy report, and update peak activity data.

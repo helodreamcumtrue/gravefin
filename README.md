@@ -29,6 +29,7 @@ Gravefin is a production-grade, trustless marketplace that resurrects abandoned 
 - **Visual Features**: 2D Excavation Cartography Quadrant Map, Forensic Autopsies, Provenance Timelines, Archivist Workbench, Community Leaderboards
 - **Database / ORM**: Prisma ORM with Neon Serverless PostgreSQL & local fallback
 - **Security**: Bcrypt password hashing, HMAC SHA-256 session signatures, HttpOnly cookie serialization
+- **Repository Intelligence**: GitHub GraphQL ingestion, weighted revival scoring, autopsy reports, and peak activity analysis
 
 ---
 
@@ -104,6 +105,7 @@ DATABASE_URL="postgresql://user:password@ep-host.aws.neon.tech/neondb?sslmode=re
 SESSION_SECRET="your-super-secret-key"
 CRON_SECRET="your-cron-secret"
 NEXT_PUBLIC_APP_NAME="Digital Graveyard"
+GITHUB_TOKEN="github_pat_your_read_only_token"
 ```
 
 ### 2. Install & Push Database Schema
@@ -112,6 +114,12 @@ npm install
 npm run prisma:push
 npm run seed
 ```
+
+### GitHub Repository Intelligence
+
+Projects may include a public GitHub repository URL. The project owner can select **Analyze Repository** from the project dossier. The first analysis is also attempted during project creation when `GITHUB_TOKEN` is configured. The analyzer uses GitHub GraphQL to store repository metadata, calculate a 0-100 revival score, classify repository health, generate an autopsy report, and identify the peak activity month.
+
+Previously analyzed repositories are refreshed once every 24 hours by `/api/cron/timeout-check`. The score is generated from live GitHub repository metadata and refreshed automatically through the scheduled ingestion pipeline.
 
 ### 3. Start Development Server
 ```bash

@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { applyTakerGhostPenalty, applyOwnerGhostPenalty, recordLedgerEntry } from '../../../lib/ledger';
+import { analyzeGitHubRepository } from '../../../lib/githubIntelligence';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') {
@@ -21,6 +22,27 @@ export default async function handler(req, res) {
     const effectiveNow = new Date(Date.now() + Number(simulateDaysElapsed) * 24 * 60 * 60 * 1000);
 
     const log = [];
+
+    // Refresh only repositories that have already been analyzed and have a stored URL.
+    const analyzedProjects = await prisma.project.findMany({
+      where: {
+        githubRepoUrl: { not: null },
+        githubAnalyzedAt: { not: null }
+      },
+      select: { id: true, title: true, githubRepoUrl: true }
+    });
+
+    let refreshedRepositories = 0;
+    for (const project of analyzedProjects) {
+      try {
+        const intelligence = await analyzeGitHubRepository(project.githubRepoUrl);
+        await prisma.project.update({ where: { id: project.id }, data: intelligence });
+        refreshedRepositories += 1;
+        log.push(`[GITHUB] Refreshed repository intelligence for "${project.title}".`);
+      } catch (analysisError) {
+        log.push(`[GITHUB] Could not refresh "${project.title}": ${analysisError.message}`);
+      }
+    }
 
     // =========================================================================
     // 1. TAKER GHOST DETECTION (ACTIVE commitments past ghostDeadlineAt)
@@ -193,6 +215,7 @@ export default async function handler(req, res) {
       processedGhostedTakers: ghostedTakers.length,
       processedGhostedOwners: ghostedOwners.length,
       processedMilestones: overdueMilestones.length,
+      refreshedRepositories,
       events: log
     });
   } catch (err) {

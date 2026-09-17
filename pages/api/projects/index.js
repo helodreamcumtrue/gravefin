@@ -1,6 +1,7 @@
 import prisma from '../../../lib/prisma';
 import { parseSession } from '../../../lib/auth';
 import { enrichProject } from '../../../lib/mockFallback';
+import { analyzeGitHubRepository, parseGitHubRepositoryUrl } from '../../../lib/githubIntelligence';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -88,14 +89,19 @@ export default async function handler(req, res) {
         milestoneMode = false,
         fileName = 'project_archive.zip',
         fileUrl = '/downloads/source.zip',
-        milestones = []
+        milestones = [],
+        githubRepoUrl = ''
       } = req.body;
 
       if (!title || !description) {
         return res.status(400).json({ error: 'Title and description are required' });
       }
 
-      const project = await prisma.project.create({
+      if (githubRepoUrl && !parseGitHubRepositoryUrl(githubRepoUrl)) {
+        return res.status(400).json({ error: 'GitHub repository URL must look like https://github.com/owner/repository' });
+      }
+
+      let project = await prisma.project.create({
         data: {
           ownerId: userId,
           title,
@@ -107,9 +113,19 @@ export default async function handler(req, res) {
           milestoneMode: Boolean(milestoneMode),
           fileName,
           fileUrl,
+          githubRepoUrl: githubRepoUrl ? parseGitHubRepositoryUrl(githubRepoUrl).url : null,
           status: 'LISTED'
         }
       });
+
+      if (githubRepoUrl && process.env.GITHUB_TOKEN) {
+        try {
+          const intelligence = await analyzeGitHubRepository(githubRepoUrl);
+          project = await prisma.project.update({ where: { id: project.id }, data: intelligence });
+        } catch (analysisError) {
+          console.warn('Initial GitHub repository analysis skipped:', analysisError.message);
+        }
+      }
 
       return res.status(201).json({ project });
     } catch (err) {

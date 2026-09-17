@@ -47,6 +47,39 @@ model Project {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // GitHub repository intelligence
+  githubRepoUrl             String?
+  githubRepoOwner           String?
+  githubRepoName            String?
+  githubDescription         String?
+  githubCreatedAt           DateTime?
+  githubLastUpdatedAt       DateTime?
+  githubDefaultBranch       String?
+  githubLicense             String?
+  githubTotalCommits        Int?
+  githubCommitFrequency     Float?
+  githubLastCommitAt        DateTime?
+  githubContributors        Int?
+  githubOpenIssues          Int?
+  githubClosedIssues        Int?
+  githubPullRequests        Int?
+  githubReleases            Int?
+  githubStars               Int?
+  githubForks               Int?
+  githubWatchers            Int?
+  githubReadmeExists        Boolean?
+  githubReadmeLength        Int?
+  revivalScore              Int?
+  autopsyStatus             String?
+  autopsyCause              String?
+  autopsyLastActivity       String?
+  autopsyDifficulty         String?
+  peakActivityMonth         String?
+  peakActivityCommits       Int?
+  peakActivityContributors  Int?
+  peakActivityPullRequests  Int?
+  githubAnalyzedAt          DateTime?
+
   // Relations
   commitments   Commitment[]
 }

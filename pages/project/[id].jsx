@@ -20,6 +20,7 @@ export default function ProjectDetails({ projectId }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
   // Modals
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
@@ -383,6 +384,30 @@ export default function ProjectDetails({ projectId }) {
     }
   };
 
+  const handleAnalyzeRepository = async () => {
+    if (!currentUser || userRole !== 'OWNER') {
+      addToast('Only the project owner can analyze this repository', 'error');
+      return;
+    }
+
+    try {
+      setAnalysisLoading(true);
+      const res = await fetch(`/api/projects/${project.id}/analyze`, {
+        method: 'POST',
+        headers: { 'x-user-id': currentUser.id }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Repository analysis failed');
+      setProject(data.project);
+      addToast('Live GitHub intelligence refreshed.', 'success');
+      await fetchProjectDetail();
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container" style={{ padding: '60px 0', textAlign: 'center' }}>
@@ -415,6 +440,7 @@ export default function ProjectDetails({ projectId }) {
   const isActive = activeCommitment?.status === 'ACTIVE';
   const isSubmitted = activeCommitment?.status === 'SUBMITTED';
   const isCompleted = project.status === 'COMPLETED';
+  const github = project.githubIntelligence;
 
   return (
     <div className="container" style={{ padding: '36px 0 70px' }}>
@@ -470,6 +496,21 @@ export default function ProjectDetails({ projectId }) {
               <span>·</span>
               <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
             </div>
+            {project.githubRepoUrl && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
+                <a href={project.githubRepoUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                  Open GitHub Repository
+                </a>
+                {isOwner && (
+                  <button type="button" className="btn btn-primary btn-sm" onClick={handleAnalyzeRepository} disabled={analysisLoading}>
+                    {analysisLoading ? 'Analyzing...' : 'Analyze Repository'}
+                  </button>
+                )}
+                <span style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>
+                  {github?.analyzedAt ? `Analyzed ${new Date(github.analyzedAt).toLocaleDateString()}` : 'Not analyzed yet'}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Section Navigation Tabs */}
@@ -574,6 +615,45 @@ export default function ProjectDetails({ projectId }) {
                   {project.description}
                 </p>
               </div>
+
+              {github && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 24 }}>
+                  <section className="card" style={{ padding: 22, background: '#FFFFFF' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontSize: 12, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Revival Score</div>
+                        <div style={{ fontSize: 48, fontWeight: 800, lineHeight: 1, marginTop: 6 }}>{github.score ?? '--'}<span style={{ fontSize: 20, color: 'var(--text-muted)' }}> / 100</span></div>
+                      </div>
+                      <div style={{ width: 180, height: 12, background: '#E8E2D5', border: '2px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                        <div style={{ width: `${github.score || 0}%`, height: '100%', background: github.score >= 70 ? 'var(--success)' : github.score >= 40 ? 'var(--accent-warm)' : 'var(--error)' }} />
+                      </div>
+                    </div>
+                    <p style={{ margin: '14px 0 0', color: 'var(--text-muted)', fontSize: 12.5, lineHeight: 1.5 }}>
+                      The score is generated from live GitHub repository metadata and refreshed automatically through our scheduled ingestion pipeline.
+                    </p>
+                  </section>
+
+                  <section className="card" style={{ padding: 22, background: '#FFFFFF' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 14px' }}>Autopsy Report</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 12 }}>
+                      <div className="surface2" style={{ padding: 12 }}><div className="label">Repository Status</div><strong>{github.status}</strong></div>
+                      <div className="surface2" style={{ padding: 12 }}><div className="label">Cause Of Decline</div><strong>{github.cause}</strong></div>
+                      <div className="surface2" style={{ padding: 12 }}><div className="label">Last Activity</div><strong>{github.lastActivity}</strong></div>
+                      <div className="surface2" style={{ padding: 12 }}><div className="label">Revival Difficulty</div><strong>{github.difficulty}</strong></div>
+                    </div>
+                  </section>
+
+                  <section className="card" style={{ padding: 22, background: '#FFFFFF' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 14px' }}>Peak Activity</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+                      <div><div className="label">Peak Month</div><strong>{github.peakMonth || 'Unavailable'}</strong></div>
+                      <div><div className="label">Commits</div><strong>{github.peakCommits ?? 0}</strong></div>
+                      <div><div className="label">Contributors</div><strong>{github.peakContributors ?? 0}</strong></div>
+                      <div><div className="label">Pull Requests</div><strong>{github.peakPullRequests ?? 0}</strong></div>
+                    </div>
+                  </section>
+                </div>
+              )}
 
               {/* Tech Stack */}
               <div

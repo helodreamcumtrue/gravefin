@@ -4,6 +4,7 @@ import prisma from '../../../lib/prisma';
 import { parseSession } from '../../../lib/auth';
 import { recordLedgerEntry } from '../../../lib/ledger';
 import { enrichProject } from '../../../lib/mockFallback';
+import { analyzeGitHubRepository } from '../../../lib/githubIntelligence';
 
 /**
  * Unified Project Details & Actions Route Handler
@@ -42,8 +43,33 @@ export default async function handler(req, res) {
       return handleReject(req, res, projectId);
     case 'download':
       return handleDownload(req, res, projectId);
+    case 'analyze':
+      return handleAnalyze(req, res, projectId);
     default:
       return res.status(404).json({ error: `Action '${action}' not found for project` });
+  }
+}
+
+async function handleAnalyze(req, res, id) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const ownerId = parseSession(req);
+    if (!ownerId) return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (project.ownerId !== ownerId) return res.status(403).json({ error: 'Only the project owner can analyze this repository' });
+    if (!project.githubRepoUrl) return res.status(400).json({ error: 'This project has no GitHub repository URL' });
+
+    const intelligence = await analyzeGitHubRepository(project.githubRepoUrl);
+    const updatedProject = await prisma.project.update({ where: { id }, data: intelligence });
+    return res.status(200).json({ project: updatedProject, message: 'GitHub repository intelligence refreshed successfully.' });
+  } catch (err) {
+    console.error('GitHub repository analysis error:', err);
+    return res.status(502).json({ error: err.message || 'GitHub repository analysis failed' });
   }
 }
 

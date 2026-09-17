@@ -21,6 +21,7 @@ export default function SubmitProject() {
   const [fileUrl, setFileUrl] = useState('/downloads/source.zip');
   const [uploading, setUploading] = useState(false);
   const [milestoneMode, setMilestoneMode] = useState(false);
+  const [githubRepoUrl, setGithubRepoUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // File upload handler
@@ -121,7 +122,8 @@ export default function SubmitProject() {
             stakeRequired: Number(stakeRequired),
             fileName: fileName.trim() || 'project.zip',
             fileUrl,
-            milestoneMode
+            milestoneMode,
+            githubRepoUrl: githubRepoUrl.trim()
           })
         });
 
@@ -149,6 +151,7 @@ export default function SubmitProject() {
         fileName: fileName.trim() || 'project.zip',
         fileUrl: fileUrl || '/downloads/source.zip',
         milestoneMode,
+        githubRepoUrl: githubRepoUrl.trim() || null,
         status: 'LISTED',
         createdAt: new Date().toISOString(),
         commitments: []
@@ -309,6 +312,20 @@ export default function SubmitProject() {
             value={techTags}
             onChange={e => setTechTags(e.target.value)}
           />
+        </div>
+
+        <div>
+          <label className="label">GitHub Repository URL (optional)</label>
+          <input
+            className="input"
+            style={{ height: 42, borderRadius: '10px' }}
+            placeholder="https://github.com/owner/repository"
+            value={githubRepoUrl}
+            onChange={e => setGithubRepoUrl(e.target.value)}
+          />
+          <div style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 4 }}>
+            Public repositories are analyzed with live GitHub GraphQL metadata.
+          </div>
         </div>
 
         {/* Escrow Stake Required & File Upload */}
