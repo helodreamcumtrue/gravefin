@@ -276,7 +276,9 @@ async function handleGitHubInit(req, res) {
   const proto = req.headers['x-forwarded-proto'] || (req.headers.host?.includes('localhost') ? 'http' : 'https');
   const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
   const configuredBaseUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || '').replace(/\/+$/, '');
-  const baseUrl = configuredBaseUrl || `${proto}://${host}`;
+  const baseUrl = configuredBaseUrl && !(process.env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(configuredBaseUrl))
+    ? configuredBaseUrl
+    : `${proto}://${host}`;
   const redirectUri = `${baseUrl}/api/auth/github/callback`;
 
   const state = crypto.randomBytes(16).toString('hex');
@@ -362,7 +364,10 @@ async function handleGitHubCallback(req, res) {
 
       const proto = req.headers['x-forwarded-proto'] || (req.headers.host?.includes('localhost') ? 'http' : 'https');
       const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
-      const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || `${proto}://${host}`;
+      const configuredBaseUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || '').replace(/\/+$/, '');
+      const baseUrl = configuredBaseUrl && !(process.env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(configuredBaseUrl))
+        ? configuredBaseUrl
+        : `${proto}://${host}`;
       const redirectUri = `${baseUrl}/api/auth/github/callback`;
 
       const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
