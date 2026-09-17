@@ -82,6 +82,9 @@ Gravefin is a production-grade, trustless marketplace that resurrects abandoned 
 ├── prisma/
 │   ├── schema.prisma    # PostgreSQL database schema & models
 │   └── seed.js          # Pre-seeded test personas and dead projects
+├── project-proposal/
+│   ├── PROJECT_PROPOSAL.md  # Project proposal in Markdown
+│   └── PROJECT_PROPOSAL.tex  # Project proposal in LaTeX
 ├── scripts/
 │   └── test-all.js      # Master unified test suite (protocol, edge cases, auth)
 ├── styles/
