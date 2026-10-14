@@ -12,14 +12,19 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "seed": "node prisma/seed.js",
-    "test": "node scripts/test-all.js"
+    "test": "node scripts/test-all.js",
+    "test:graphql": "node scripts/test-graphql.js",
+    "generate:pdf": "node scripts/generate-pdf.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "canvas-confetti": "^1.9.4",
+    "graphql": "^17.0.2",
+    "graphql-yoga": "^5.24.5",
     "lucide-react": "^1.46.0",
     "next": "^14.2.23",
+    "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

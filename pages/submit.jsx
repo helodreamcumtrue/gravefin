@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useApp } from '../context/AppContext';
 import Icon from '../components/Icons';
+import { GitBranch, Code2 } from 'lucide-react';
 import { getLocalProjects, saveLocalProjects } from '../lib/mockFallback';
 
 const CATEGORIES = ['Web', 'Mobile', 'AI/ML', 'IoT', 'Game', 'Cybersecurity'];
@@ -17,75 +18,10 @@ export default function SubmitProject() {
   const [completion, setCompletion] = useState(30);
   const [techTags, setTechTags] = useState('React, Node.js, SQLite');
   const [stakeRequired, setStakeRequired] = useState(100);
-  const [fileName, setFileName] = useState('abandoned_codebase.zip');
-  const [fileUrl, setFileUrl] = useState('/downloads/source.zip');
-  const [uploading, setUploading] = useState(false);
+  const [gitRepoUrl, setGitRepoUrl] = useState('');
+  const [gitBranch, setGitBranch] = useState('main');
   const [milestoneMode, setMilestoneMode] = useState(false);
-  const [githubRepoUrl, setGithubRepoUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  // File upload handler
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!currentUser) {
-      addToast('Please log in before uploading project source archives', 'error');
-      return;
-    }
-
-    if (!file.name.toLowerCase().endsWith('.zip') && !file.name.toLowerCase().endsWith('.tar.gz')) {
-      addToast('Please upload a .zip or .tar.gz archive', 'error');
-      return;
-    }
-
-    if (file.size > 50 * 1024 * 1024) {
-      addToast('File exceeds maximum size of 50MB', 'error');
-      return;
-    }
-
-    try {
-      setUploading(true);
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result.split(',')[1];
-        try {
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(currentUser ? { 'x-user-id': currentUser.id } : {})
-            },
-            body: JSON.stringify({
-              fileName: file.name,
-              fileBase64: base64
-            })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            setFileName(file.name);
-            setFileUrl(data.fileUrl);
-            addToast(`Uploaded ${file.name} successfully!`, 'success');
-            setUploading(false);
-            return;
-          }
-        } catch (e) {
-          // Handled in fallback below
-        }
-
-        // Demo fallback
-        setFileName(file.name);
-        setFileUrl('/downloads/source.zip');
-        addToast(`Uploaded ${file.name} (Demo Mode)!`, 'success');
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      addToast(err.message, 'error');
-      setUploading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,10 +37,18 @@ export default function SubmitProject() {
       addToast('Title and description are required', 'error');
       return;
     }
+    if (!gitRepoUrl.trim()) {
+      addToast('Git repository URL is required', 'error');
+      return;
+    }
 
     try {
       setSubmitting(true);
       const tagsArray = techTags.split(',').map(s => s.trim()).filter(Boolean);
+      const cleanGitUrl = gitRepoUrl.trim();
+      const repoSlug = cleanGitUrl.split('/').filter(Boolean).pop()?.replace('.git', '') || 'repository';
+      const cleanBranch = gitBranch.trim() || 'main';
+      const packageLabel = `${repoSlug}.git (${cleanBranch})`;
 
       try {
         const res = await fetch('/api/projects', {
@@ -120,10 +64,10 @@ export default function SubmitProject() {
             completion: Number(completion),
             techTags: JSON.stringify(tagsArray),
             stakeRequired: Number(stakeRequired),
-            fileName: fileName.trim() || 'project.zip',
-            fileUrl,
+            fileName: packageLabel,
+            fileUrl: cleanGitUrl,
             milestoneMode,
-            githubRepoUrl: githubRepoUrl.trim()
+            githubRepoUrl: cleanGitUrl
           })
         });
 
@@ -148,10 +92,10 @@ export default function SubmitProject() {
         completion: Number(completion),
         techTags: JSON.stringify(tagsArray),
         stakeRequired: Number(stakeRequired),
-        fileName: fileName.trim() || 'project.zip',
-        fileUrl: fileUrl || '/downloads/source.zip',
+        fileName: packageLabel,
+        fileUrl: cleanGitUrl,
         milestoneMode,
-        githubRepoUrl: githubRepoUrl.trim() || null,
+        githubRepoUrl: cleanGitUrl,
         status: 'LISTED',
         createdAt: new Date().toISOString(),
         commitments: []
@@ -314,53 +258,70 @@ export default function SubmitProject() {
           />
         </div>
 
-        <div>
-          <label className="label">GitHub Repository URL (optional)</label>
+        {/* Git Repository Source (Replaces source code zip file upload) */}
+        <div
+          style={{
+            background: '#FAF8F4',
+            padding: 22,
+            borderRadius: 14,
+            border: '2px solid var(--border)',
+            boxShadow: '2px 2px 0px #141414'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <GitBranch size={18} />
+              <label className="label" style={{ margin: 0, fontSize: 15, fontWeight: 800 }}>Git Repository URL *</label>
+            </div>
+            <span style={{ fontSize: 11.5, background: 'var(--ink)', color: '#FFFFFF', padding: '3px 8px', borderRadius: 12, fontWeight: 600 }}>
+              Replaces ZIP upload
+            </span>
+          </div>
+
           <input
             className="input"
-            style={{ height: 42, borderRadius: '10px' }}
-            placeholder="https://github.com/owner/repository"
-            value={githubRepoUrl}
-            onChange={e => setGithubRepoUrl(e.target.value)}
+            style={{ height: 44, borderRadius: '10px' }}
+            placeholder="https://github.com/owner/repository (or .git clone URL)"
+            value={gitRepoUrl}
+            onChange={e => setGitRepoUrl(e.target.value)}
+            required
           />
-          <div style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 4 }}>
-            Public repositories are analyzed with live GitHub GraphQL metadata.
-          </div>
-        </div>
 
-        {/* Escrow Stake Required & File Upload */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-          <div>
-            <label className="label">Required Escrow Stake (Credits)</label>
-            <input
-              type="number"
-              min="20"
-              max="500"
-              className="input"
-              style={{ height: 42, borderRadius: '10px' }}
-              value={stakeRequired}
-              onChange={e => setStakeRequired(e.target.value)}
-              required
-            />
-            <div style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 4 }}>
-              Locked from the builder upon your approval.
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 14 }}>
+            <div>
+              <label className="label" style={{ fontSize: 12 }}>Target Branch / Revision</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <GitBranch size={16} color="var(--text-muted)" />
+                <input
+                  className="input"
+                  style={{ height: 38, borderRadius: '8px' }}
+                  placeholder="main"
+                  value={gitBranch}
+                  onChange={e => setGitBranch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="label" style={{ fontSize: 12 }}>Required Escrow Stake (Credits) *</label>
+              <input
+                type="number"
+                min="20"
+                max="500"
+                className="input"
+                style={{ height: 38, borderRadius: '8px' }}
+                value={stakeRequired}
+                onChange={e => setStakeRequired(e.target.value)}
+                required
+              />
             </div>
           </div>
 
-          {/* Zip Upload Input */}
-          <div>
-            <label className="label">Source Code Archive (.zip, max 50MB)</label>
-            <input
-              type="file"
-              accept=".zip,.tar.gz"
-              className="input"
-              onChange={handleFileChange}
-              disabled={uploading}
-              style={{ padding: '7px 10px', height: 42, borderRadius: '10px', cursor: 'pointer' }}
-            />
-            <div style={{ fontSize: 11.5, color: uploading ? 'var(--accent)' : 'var(--text-dim)', marginTop: 4 }}>
-              {uploading ? 'Uploading archive...' : `Current package: ${fileName}`}
-            </div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 12, display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.4 }}>
+            <Code2 size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span>
+              Public or private Git repository link. Approved Diggers receive access coordinates to this Git repository upon locking skin-in-the-game collateral in escrow. Live GitHub GraphQL metadata and forensic autopsy diagnostics are generated from this link.
+            </span>
           </div>
         </div>
 
@@ -397,9 +358,9 @@ export default function SubmitProject() {
           type="submit"
           className="btn btn-primary btn-block"
           style={{ padding: '14px', fontSize: 15, marginTop: 8, borderRadius: '12px' }}
-          disabled={submitting || uploading}
+          disabled={submitting}
         >
-          {submitting ? 'Listing in Graveyard...' : 'List Codebase in Graveyard →'}
+          {submitting ? 'Listing in Graveyard...' : 'List Git Repository in Graveyard →'}
         </button>
       </form>
     </div>

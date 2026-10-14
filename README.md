@@ -19,6 +19,7 @@ Gravefin is a production-grade, trustless marketplace that resurrects abandoned 
   - **Owner Ghosting (>7 days without review)** $\rightarrow$ Auto-completed, Taker refunded + rewarded, Owner −10 rep, +1 strike.
   - **3 Ghost Strikes** $\rightarrow$ Account automatically restricted from creating listings or claiming projects.
 - **Interactive Protocol Sandbox (`/simulator`)**: Built-in visual simulation console to fast-forward time (+7d, +14d, +30d) and trigger automated cron resolution on demand.
+- **GraphQL API & GraphiQL Explorer (`/api/graphql` & `/graphql`)**: Production-grade GraphQL Yoga v5 endpoint and in-app query explorer to query projects, diggers, escrow commitments, and ledger entries.
 
 ---
 

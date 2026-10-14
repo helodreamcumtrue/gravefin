@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gravefin — GraphQL Architecture & Implementation Guide</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 18mm 20mm 18mm;
+      @bottom-right {
+        content: counter(page) " / " counter(pages);
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 9pt;
+        color: #718096;
+      }
+      @bottom-left {
+        content: "Project Graveyard (Gravefin) — GraphQL Architecture Specification";
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 9pt;
+        color: #718096;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1a202c;
+      background-color: #ffffff;
+      line-height: 1.6;
+      font-size: 10.5pt;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Cover / Header */
+    .header-box {
+      border-bottom: 2.5px solid #2d3748;
+      padding-bottom: 16px;
+      margin-bottom: 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .title-area h1 {
+      font-size: 24pt;
+      margin: 0 0 6px 0;
+      color: #0f172a;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .title-area .subtitle {
+      font-size: 11.5pt;
+      color: #475569;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .meta-badge {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 9pt;
+      text-align: right;
+      color: #334155;
+      line-height: 1.4;
+    }
+
+    /* Headings */
+    h2 {
+      font-size: 14pt;
+      color: #0f172a;
+      border-left: 4px solid #3b82f6;
+      padding-left: 10px;
+      margin-top: 24px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      page-break-after: avoid;
+    }
+
+    h3 {
+      font-size: 11.5pt;
+      color: #1e293b;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      page-break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 10px 0;
+      color: #334155;
+    }
+
+    /* Callout Card */
+    .callout {
+      background: #f8fafc;
+      border-left: 4px solid #6366f1;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 14px 0;
+      font-size: 10pt;
+    }
+
+    .callout strong {
+      color: #312e81;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    /* Code Blocks */
+    pre {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9pt;
+      line-height: 1.45;
+      overflow-x: auto;
+      margin: 10px 0 16px 0;
+      page-break-inside: avoid;
+      border: 1px solid #1e293b;
+    }
+
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 9pt;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .tag-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 8pt;
+      font-weight: 600;
+      background: #e0f2fe;
+      color: #0369a1;
+      margin-right: 4px;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    /* Architecture Box */
+    .arch-diagram {
+      background: #fafafa;
+      border: 1.5px dashed #cbd5e1;
+      padding: 14px;
+      border-radius: 8px;
+      font-family: 'Consolas', monospace;
+      font-size: 8.5pt;
+      line-height: 1.35;
+      color: #1e293b;
+      margin: 14px 0;
+      page-break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header-box">
+    <div class="title-area">
+      <h1>🪦 Gravefin GraphQL Guide</h1>
+      <p class="subtitle">Complete Architecture, Implementation & Execution Specification</p>
+    </div>
+    <div class="meta-badge">
+      <strong>Repository:</strong> GRAVFIN<br>
+      <strong>Version:</strong> 1.0.0 (Production)<br>
+      <strong>Status:</strong> Active &amp; Tested (100% Pass)
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <h2>1. What GraphQL is Doing in Gravefin</h2>
+  <p>
+    Gravefin is an escrow-backed, anonymous marketplace for reviving abandoned codebases. 
+    A single project entity does not exist in isolation; it sits at the intersection of a complex relational graph:
+  </p>
+
+  <div class="arch-diagram">
+Project (Dead Code Specimen)
+  ├──► Owner (e.g. Digger-1042) [Alias, Reputation, Strike Count]
+  ├──► Forensic Autopsy [Cause of Decline, Difficulty, Health Score]
+  ├──► Active Commitment [Staked Escrow, Delivery Deadlines]
+  │       └──► Assigned Digger [Skin-in-the-Game Collateral]
+  │       └──► Milestones & Handover Checklist Dual Sign-Off
+  └──► Append-Only Ledger [Immutable Cryptographic Transaction Trail]
+  </div>
+
+  <p>
+    In standard REST architecture, loading a complete project page requires <strong>4 to 5 separate HTTP round-trips</strong> 
+    (fetching the project, then the owner, then active commitments, then milestones, then ledger entries).
+  </p>
+
+  <div class="callout">
+    <strong>Key Role of GraphQL:</strong> GraphQL provides a single, unified query language enabling the frontend, 
+    external tools, or automated agents to fetch the exact nested graph of data needed in <strong>a single HTTP request</strong>, 
+    eliminating over-fetching and network waterfall latency.
+  </div>
+
+  <h3>Core Capabilities Provided</h3>
+  <ul>
+    <li><strong>Graph Traversal:</strong> Query projects alongside their owners, commitments, autopsy health metrics, and tech tags in a single declaration.</li>
+    <li><strong>Transactional State Mutations:</strong> Atomically lock collateral in escrow, record immutable audit entries, and transition project statuses.</li>
+    <li><strong>Strict Anonymity &amp; Privacy:</strong> Field-level resolvers automatically shield personal emails and GitHub tokens—counter-parties only ever receive pseudonymous aliases (e.g., <code>Digger-1042</code>).</li>
+    <li><strong>Autonomous Cron Execution:</strong> Trigger deterministic 14-day taker inactivity and 7-day owner review timeouts via GraphQL mutations.</li>
+  </ul>
+
+  <!-- SECTION 2 -->
+  <h2>2. Implementation Architecture</h2>
+  <p>
+    The GraphQL layer is structured into 4 clean, modular tiers within the Next.js 14 Pages Router:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 28%;">Layer</th>
+        <th style="width: 32%;">File Path</th>
+        <th>Responsibility</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Type Definitions</strong></td>
+        <td><code>lib/graphql/typeDefs.js</code></td>
+        <td>Strict GraphQL SDL declaring types, enums, inputs, queries, and mutations.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Resolvers</strong></td>
+        <td><code>lib/graphql/resolvers.js</code></td>
+        <td>Executes Prisma queries, handles relational mapping, enforces transactions.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Serverless Route</strong></td>
+        <td><code>pages/api/graphql.js</code></td>
+        <td>GraphQL Yoga v5 endpoint with auth session parsing and GraphiQL IDE.</td>
+      </tr>
+      <tr>
+        <td><strong>4. In-App Explorer</strong></td>
+        <td><code>pages/graphql.jsx</code></td>
+        <td>Interactive UI explorer with preset queries and execution timer.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <h2>3. Detailed Implementation Breakdown</h2>
+
+  <h3>A. Schema Contract (<code>lib/graphql/typeDefs.js</code>)</h3>
+  <p>
+    The schema defines the exact contract between clients and the Gravefin database:
+  </p>
+  <pre><code>type Project {
+  id: ID!
+  title: String!
+  description: String!
+  category: String!
+  status: ProjectStatus!
+  stakeRequired: Int!
+  techTags: [String!]!
+  revivalScore: Int
+  revivalDetails: RevivalScoreDetails
+  autopsy: ProjectAutopsy
+  owner: User!
+  commitments: [Commitment!]!
+  activeCommitment: Commitment
+}
+
+type User {
+  id: ID!
+  alias: String!
+  credits: Int!
+  reputation: Int!
+  ghostStrikes: Int!
+  banned: Boolean!
+  ownedProjects: [Project!]!
+  ledgerEntries: [LedgerEntry!]!
+}
+
+type Commitment {
+  id: ID!
+  project: Project!
+  taker: User!
+  status: CommitmentStatus!
+  stakeLocked: Int!
+  ghostDeadlineAt: String
+  milestones: [Milestone!]!
+}</code></pre>
+
+  <h3>B. Relational Resolvers &amp; Escrow Transactions (<code>lib/graphql/resolvers.js</code>)</h3>
+  <p>
+    When a nested field is requested, GraphQL executes field resolvers. When a mutation is triggered, it wraps database updates in an atomic Prisma transaction:
+  </p>
+  <pre><code>// Atomic Escrow Staking Mutation
+commitToProject: async (_, { projectId }, { currentUser }) => {
+  if (!currentUser) throw new Error('Authentication required');
+  if (currentUser.credits &lt; project.stakeRequired) {
+    throw new Error('Insufficient credits');
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    // 1. Append immutable ledger entry (-stakeRequired)
+    await recordLedgerEntry({
+      userId: currentUser.id,
+      type: 'STAKE_LOCK',
+      amount: -project.stakeRequired,
+      relatedProjectId: project.id,
+      notes: `Staked ${project.stakeRequired} credits in escrow`,
+      tx
+    });
+
+    // 2. Create commitment record in PENDING_APPROVAL
+    const commitment = await tx.commitment.create({
+      data: {
+        projectId: project.id,
+        takerId: currentUser.id,
+        stakeLocked: project.stakeRequired,
+        status: 'PENDING_APPROVAL'
+      }
+    });
+
+    // 3. Update project status
+    await tx.project.update({
+      where: { id: project.id },
+      data: { status: 'PENDING_APPROVAL' }
+    });
+
+    return commitment;
+  });
+}</code></pre>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <h2>4. Production Ready Queries &amp; Output</h2>
+
+  <h3>Sample 1: Querying Catalog with Forensic Autopsies</h3>
+  <pre><code>query GetCatalogSpecimens {
+  projects(limit: 3) {
+    id
+    title
+    status
+    stakeRequired
+    techTags
+    revivalScore
+    autopsy {
+      cause
+      difficulty
+    }
+    owner {
+      alias
+      reputation
+    }
+  }
+}</code></pre>
+
+  <p><strong>Returned JSON Response:</strong></p>
+  <pre><code>{
+  "data": {
+    "projects": [
+      {
+        "id": "p1",
+        "title": "AI Adaptive Study Plan Generator",
+        "status": "LISTED",
+        "stakeRequired": 120,
+        "techTags": ["Python", "FastAPI", "React", "SQLite", "LangChain"],
+        "revivalScore": 88,
+        "autopsy": { "cause": "Solo Burnout", "difficulty": "Surface Dig" },
+        "owner": { "alias": "Digger-1042", "reputation": 140 }
+      }
+    ]
+  }
+}</code></pre>
+
+  <h3>Sample 2: Auditing the Append-Only Financial Ledger</h3>
+  <pre><code>query AuditLedger {
+  ledgerEntries(limit: 5) {
+    id
+    type
+    amount
+    notes
+    createdAt
+    user {
+      alias
+      credits
+    }
+  }
+}</code></pre>
+
+  <h2>5. How to Access &amp; Test</h2>
+  <ol>
+    <li>
+      <strong>In-App Visual Explorer:</strong> Navigate to <a href="http://localhost:3000/graphql"><code>http://localhost:3000/graphql</code></a> or click <strong>GraphQL</strong> in the top navigation bar.
+    </li>
+    <li>
+      <strong>GraphiQL Playground IDE:</strong> Open <a href="http://localhost:3000/api/graphql"><code>http://localhost:3000/api/graphql</code></a> in any web browser to view interactive schema documentation, auto-completion, and live query execution.
+    </li>
+    <li>
+      <strong>Automated Test Suite:</strong> Run the verification command in your terminal:
+      <pre><code>npm run test:graphql</code></pre>
+      Verifies schema compilation, nested relational queries, and simulation mutations with 100% pass rate.
+    </li>
+  </ol>
+
+  <div class="callout" style="margin-top: 30px;">
+    <strong>Verification Status:</strong> Passed automated test runner on Node.js v24.12.0 and Next.js 14 Pages Router. 
+    Zero dependencies on external network services for core operation due to built-in local fallback support.
+  </div>
+
+</body>
+</html>
