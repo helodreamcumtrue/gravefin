@@ -6,11 +6,11 @@ import Icon from '../components/Icons';
 
 export default function Login({ initialMode = 'login' }) {
   const router = useRouter();
-  const { login, signup, personas, switchPersona, addToast } = useApp();
+  const { login, signup, addToast } = useApp();
   const [mode, setMode] = useState(initialMode);
-  const [email, setEmail] = useState('sarah.chen@campus.edu');
-  const [password, setPassword] = useState('password123');
-  const [confirmPassword, setConfirmPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -65,18 +65,6 @@ export default function Login({ initialMode = 'login' }) {
     } catch (err) {
       setErrorMsg(err.message || (mode === 'signup' ? 'Registration failed' : 'Authentication failed'));
       addToast(err.message || (mode === 'signup' ? 'Registration failed' : 'Authentication failed'), 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickLogin = async (p) => {
-    try {
-      setLoading(true);
-      await switchPersona(p.id);
-      router.push('/dashboard');
-    } catch (err) {
-      addToast('Failed to switch persona', 'error');
     } finally {
       setLoading(false);
     }
@@ -226,6 +214,7 @@ export default function Login({ initialMode = 'login' }) {
               type="email"
               className="input"
               style={{ height: 42, borderRadius: '10px' }}
+              placeholder="digger@example.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
@@ -238,6 +227,7 @@ export default function Login({ initialMode = 'login' }) {
               type="password"
               className="input"
               style={{ height: 42, borderRadius: '10px' }}
+              placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -251,6 +241,7 @@ export default function Login({ initialMode = 'login' }) {
                 type="password"
                 className="input"
                 style={{ height: 42, borderRadius: '10px' }}
+                placeholder="••••••••"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
@@ -274,41 +265,6 @@ export default function Login({ initialMode = 'login' }) {
           ) : (
             <span>Don&apos;t have an account? <button type="button" onClick={() => setMode('signup')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>Create anonymous account</button></span>
           )}
-        </div>
-      </div>
-
-      {/* Quick Switch Demo Accounts */}
-      <div style={{ marginTop: 32 }}>
-        <div style={{ fontSize: 11.5, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 800, letterSpacing: '0.04em', marginBottom: 12, textAlign: 'center' }}>
-          Or Select A Pre-Seeded Testing Persona (1-Click)
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {personas.map(p => (
-            <button
-              key={p.id}
-              type="button"
-              className="card"
-              onClick={() => handleQuickLogin(p)}
-              disabled={loading}
-              style={{
-                padding: '12px',
-                textAlign: 'left',
-                cursor: 'pointer',
-                background: '#FFFFFF',
-                borderRadius: '12px',
-                border: '1.8px solid var(--border)',
-                boxShadow: '1.5px 2px 0px #141414',
-                transition: 'transform 0.1s ease'
-              }}
-            >
-              <div style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>
-                {p.alias}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
-                {p.credits} cr · ★ {p.reputation} rep
-              </div>
-            </button>
-          ))}
         </div>
       </div>
     </div>

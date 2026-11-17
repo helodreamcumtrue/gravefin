@@ -12,7 +12,7 @@ import { getLocalProjects, saveLocalProjects } from '../../lib/mockFallback';
 export default function ProjectDetails({ projectId }) {
   const router = useRouter();
   const id = projectId || router.query.id;
-  const { currentUser, personas, switchPersona, addToast, refreshUser } = useApp();
+  const { currentUser, addToast, refreshUser } = useApp();
 
   const [project, setProject] = useState(null);
   const [activeCommitment, setActiveCommitment] = useState(null);
@@ -71,7 +71,8 @@ export default function ProjectDetails({ projectId }) {
   // 1. Taker claims project
   const handleCommit = async () => {
     if (!currentUser) {
-      addToast('Please select or log in to a persona to claim a project', 'error');
+      addToast('Please sign in or create an account to claim a codebase.', 'info');
+      router.push(`/login?redirect=/project/${project?.id || ''}`);
       return;
     }
     if (currentUser.credits < (project?.stakeRequired || 0)) {
@@ -781,51 +782,6 @@ export default function ProjectDetails({ projectId }) {
 
         {/* Right Column: Escrow Actions & Role Pane */}
         <div>
-          {/* Quick Role Switcher for Seamless Testing */}
-          <div
-            className="surface2"
-            style={{
-              padding: 14,
-              borderRadius: 14,
-              border: '2px dashed var(--border)',
-              marginBottom: 16,
-              background: '#FBF8F2'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)' }}>
-                🎭 Quick Role Switcher
-              </span>
-              <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                Active: <strong style={{ color: 'var(--accent)' }}>{currentUser?.alias || 'Guest'}</strong>
-              </span>
-            </div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {(personas || []).slice(0, 4).map(p => {
-                const isCurr = currentUser?.id === p.id;
-                const roleLabel = p.id === project.ownerId ? 'Owner' : (activeCommitment?.takerId === p.id ? 'Taker' : 'Builder');
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => switchPersona(p.id)}
-                    className="btn-sketch-sm"
-                    style={{
-                      fontSize: 11,
-                      padding: '4px 8px',
-                      background: isCurr ? 'var(--accent)' : '#FFFFFF',
-                      color: isCurr ? '#FFFFFF' : 'var(--text)',
-                      borderColor: 'var(--border)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {p.alias} ({roleLabel})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Action Card */}
           <div
             className="card"
@@ -1029,19 +985,33 @@ export default function ProjectDetails({ projectId }) {
                       </div>
                     </div>
 
-                    <button
-                      className="btn btn-primary btn-block"
-                      onClick={handleCommit}
-                      disabled={actionLoading || (currentUser && currentUser.credits < project.stakeRequired)}
-                    >
-                      {actionLoading ? 'Claiming...' : `Commit ${project.stakeRequired} Credits Stake`}
-                    </button>
+                    {currentUser ? (
+                      <button
+                        className="btn btn-primary btn-block"
+                        onClick={handleCommit}
+                        disabled={actionLoading || currentUser.credits < project.stakeRequired}
+                      >
+                        {actionLoading ? 'Claiming...' : `Commit ${project.stakeRequired} Credits Stake`}
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/login?redirect=/project/${project.id}`}
+                        className="btn btn-primary btn-block"
+                        style={{ textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        Sign In to Claim Codebase →
+                      </Link>
+                    )}
 
-                    {currentUser && currentUser.credits < project.stakeRequired && (
+                    {!currentUser ? (
+                      <div style={{ fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
+                        Create an account or sign in to lock escrow collateral.
+                      </div>
+                    ) : currentUser.credits < project.stakeRequired ? (
                       <div style={{ fontSize: 12, color: 'var(--error)', textAlign: 'center' }}>
                         You need {project.stakeRequired - currentUser.credits} more credits to claim this project.
                       </div>
-                    )}
+                    ) : null}
                   </>
                 ) : (
                   <div style={{ padding: '14px', background: 'var(--surface-2)', borderRadius: 10, fontSize: 13, color: 'var(--text-dim)', textAlign: 'center' }}>

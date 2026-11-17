@@ -55,30 +55,18 @@ export function AppProvider({ children }) {
         // Handled below
       }
 
-      // If no valid session cookie, check localStorage or default to first persona for demo mode
-      if (personaList.length > 0) {
-        const storedId = localStorage.getItem('graveyard_active_user_id');
-        const targetPersona = personaList.find(p => p.id === storedId) || personaList[0];
-        
-        try {
-          const switchRes = await fetch('/api/auth/switch-persona', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: targetPersona.id })
-          });
-          if (switchRes.ok) {
-            const switchData = await switchRes.json();
-            setCurrentUser(switchData.user);
-            localStorage.setItem('graveyard_active_user_id', switchData.user.id);
-            return;
-          }
-        } catch (e) {
-          // In static demo mode, fallback directly
+      // If user previously authenticated and stored ID is present, verify in known list
+      const storedId = typeof window !== 'undefined' ? localStorage.getItem('graveyard_active_user_id') : null;
+      if (storedId) {
+        const existing = personaList.find(p => p.id === storedId);
+        if (existing) {
+          setCurrentUser(existing);
+          return;
         }
-
-        setCurrentUser(targetPersona);
-        localStorage.setItem('graveyard_active_user_id', targetPersona.id);
       }
+
+      // Guest / unauthenticated visitor by default
+      setCurrentUser(null);
     } catch (err) {
       console.error('Error initializing authentication context:', err);
     } finally {
@@ -162,7 +150,7 @@ export function AppProvider({ children }) {
       };
       setCurrentUser(newUser);
       localStorage.setItem('graveyard_active_user_id', newUser.id);
-      addToast(`Account created! Assigned alias: ${newUser.alias} (+500 demo credits)`, 'success');
+      addToast(`Account created! Assigned alias: ${newUser.alias} (+500 starter credits)`, 'success');
       return newUser;
     }
   };

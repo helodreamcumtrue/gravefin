@@ -10,7 +10,7 @@ const CATEGORIES = ['Web', 'Mobile', 'AI/ML', 'IoT', 'Game', 'Cybersecurity'];
 
 export default function SubmitProject() {
   const router = useRouter();
-  const { currentUser, personas, switchPersona, addToast } = useApp();
+  const { currentUser, addToast } = useApp();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -131,25 +131,6 @@ export default function SubmitProject() {
             <Link href="/signup" className="btn btn-secondary btn-block" style={{ height: 42, borderRadius: '10px', fontSize: 14.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               Create Anonymous Account
             </Link>
-          </div>
-
-          <div style={{ paddingTop: 16, borderTop: '1px dashed var(--border)' }}>
-            <div style={{ fontSize: 11.5, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8, letterSpacing: '0.05em' }}>
-              Quick Persona Switch (Instant Testing)
-            </div>
-            <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {(personas || []).slice(0, 4).map(p => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className="btn-sketch-sm"
-                  onClick={() => switchPersona(p.id)}
-                  style={{ fontSize: 11.5, padding: '4px 10px', cursor: 'pointer' }}
-                >
-                  {p.alias}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>

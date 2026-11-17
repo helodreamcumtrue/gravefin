@@ -25,7 +25,7 @@ import {
 
 export default function Navbar() {
   const router = useRouter();
-  const { currentUser, personas, switchPersona, logout, campusMode, setCampusMode } = useApp();
+  const { currentUser, logout, campusMode, setCampusMode } = useApp();
   const [personaOpen, setPersonaOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -346,65 +346,65 @@ export default function Navbar() {
             />
           </form>
 
-          {/* User Persona Profile Pill */}
-          <div ref={personaRef} style={{ position: 'relative' }}>
-            <button
-              onClick={() => setPersonaOpen(!personaOpen)}
-              className="sketch-btn"
-              style={{
-                height: 35,
-                padding: '0 10px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 12,
-                fontFamily: 'var(--font-mono)',
-                borderRadius: 8
-              }}
-              title={currentUser ? `Digger: ${currentUser.alias}` : 'Archaeologist Profile'}
-              aria-label="Digger Profile"
-            >
-              <User style={{ width: 14, height: 14 }} />
-              <span className="hide-mobile" style={{ fontWeight: 600 }}>
-                {currentUser ? `${currentUser.alias} (${currentUser.credits} cr)` : 'Persona'}
-              </span>
-              <span style={{ fontSize: 10, opacity: 0.7 }}>▾</span>
-            </button>
-
-            {/* Persona Switcher Dropdown */}
-            {personaOpen && (
-              <div
-                className="sketch-card-static"
+          {/* User Profile Pill or Sign In / Register */}
+          {currentUser ? (
+            <div ref={personaRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setPersonaOpen(!personaOpen)}
+                className="sketch-btn"
                 style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 42,
-                  width: 300,
-                  padding: 14,
-                  zIndex: 200,
-                  boxShadow: '4px 6px 0px #141414',
-                  backgroundColor: 'var(--color-paper)',
-                  borderRadius: 12
+                  height: 35,
+                  padding: '0 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 12,
+                  fontFamily: 'var(--font-mono)',
+                  borderRadius: 8
                 }}
+                title={`Digger: ${currentUser.alias}`}
+                aria-label="Digger Profile"
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 8, borderBottom: '1.5px solid rgba(17, 17, 17, 0.15)', marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontFamily: 'var(--font-hand)', fontSize: 20, fontWeight: 700, color: 'var(--color-ink)' }}>
-                      {currentUser?.alias || 'Guest Archaeologist'}
-                    </div>
-                    <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'rgba(17, 17, 17, 0.65)' }}>
-                      {currentUser?.email || 'Anonymous Digger'}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setPersonaOpen(false)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
-                  >
-                    <X style={{ width: 15, height: 15 }} />
-                  </button>
-                </div>
+                <User style={{ width: 14, height: 14 }} />
+                <span className="hide-mobile" style={{ fontWeight: 600 }}>
+                  {`${currentUser.alias} (${currentUser.credits} cr)`}
+                </span>
+                <span style={{ fontSize: 10, opacity: 0.7 }}>▾</span>
+              </button>
 
-                {currentUser && (
+              {/* User Account Dropdown */}
+              {personaOpen && (
+                <div
+                  className="sketch-card-static"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 42,
+                    width: 280,
+                    padding: 14,
+                    zIndex: 200,
+                    boxShadow: '4px 6px 0px #141414',
+                    backgroundColor: 'var(--color-paper)',
+                    borderRadius: 12
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 8, borderBottom: '1.5px solid rgba(17, 17, 17, 0.15)', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-hand)', fontSize: 20, fontWeight: 700, color: 'var(--color-ink)' }}>
+                        {currentUser.alias}
+                      </div>
+                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'rgba(17, 17, 17, 0.65)' }}>
+                        {currentUser.email || 'Anonymous Digger'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setPersonaOpen(false)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
+                    >
+                      <X style={{ width: 15, height: 15 }} />
+                    </button>
+                  </div>
+
                   <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
                     <div className="sketch-tag" style={{ flex: 1, padding: '3px 6px', fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                       <Coins style={{ width: 11, height: 11 }} />
@@ -415,48 +415,52 @@ export default function Navbar() {
                       <span>{currentUser.reputation} Rep</span>
                     </div>
                   </div>
-                )}
 
-                {/* Switch Persona Options */}
-                <div>
-                  <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(17, 17, 17, 0.6)', marginBottom: 6 }}>
-                    Switch Demo Persona
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setPersonaOpen(false)}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 6,
+                        backgroundColor: 'var(--color-paper-dark)',
+                        fontSize: 12,
+                        fontFamily: 'var(--font-sans)',
+                        textDecoration: 'none',
+                        color: 'var(--color-ink)',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <span>Dashboard & Stakes</span>
+                      <span>→</span>
+                    </Link>
+                    <Link
+                      href="/submit"
+                      onClick={() => setPersonaOpen(false)}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 6,
+                        backgroundColor: 'transparent',
+                        fontSize: 12,
+                        fontFamily: 'var(--font-sans)',
+                        textDecoration: 'none',
+                        color: 'var(--color-ink)',
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        border: '1px solid rgba(17, 17, 17, 0.15)'
+                      }}
+                    >
+                      <span>Submit Codebase</span>
+                      <span>+</span>
+                    </Link>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 120, overflowY: 'auto' }}>
-                    {personas.map((p) => {
-                      const isCurrent = currentUser?.id === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          onClick={() => {
-                            switchPersona(p.id);
-                            setPersonaOpen(false);
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '4px 8px',
-                            borderRadius: 5,
-                            border: isCurrent ? '1.5px solid var(--color-ink)' : '1px solid transparent',
-                            backgroundColor: isCurrent ? 'var(--color-paper-dark)' : 'transparent',
-                            cursor: 'pointer',
-                            fontSize: 11.5,
-                            fontFamily: 'inherit'
-                          }}
-                        >
-                          <span style={{ fontWeight: isCurrent ? 700 : 500 }}>{p.alias}</span>
-                          <span style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'rgba(17, 17, 17, 0.6)' }}>
-                            {p.credits} cr
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {currentUser && (
-                  <div style={{ marginTop: 10, paddingTop: 6, borderTop: '1px solid rgba(17, 17, 17, 0.1)' }}>
+                  <div style={{ paddingTop: 6, borderTop: '1px solid rgba(17, 17, 17, 0.1)' }}>
                     <button
                       onClick={async () => {
                         setPersonaOpen(false);
@@ -465,23 +469,63 @@ export default function Navbar() {
                       }}
                       style={{
                         width: '100%',
-                        padding: '4px 0',
-                        fontSize: 11.5,
+                        padding: '6px 0',
+                        fontSize: 12,
                         color: 'var(--error)',
                         background: 'none',
                         border: 'none',
                         cursor: 'pointer',
                         textAlign: 'center',
-                        fontWeight: 600
+                        fontWeight: 700,
+                        fontFamily: 'var(--font-sans)'
                       }}
                     >
                       Sign Out
                     </button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Link
+                href="/login"
+                className="sketch-btn"
+                style={{
+                  height: 35,
+                  padding: '0 12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-mono)',
+                  textDecoration: 'none',
+                  borderRadius: 8,
+                  backgroundColor: 'transparent'
+                }}
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                className="sketch-btn"
+                style={{
+                  height: 35,
+                  padding: '0 12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  borderRadius: 8,
+                  backgroundColor: 'var(--color-ink)',
+                  color: '#FAF6EE'
+                }}
+              >
+                Register
+              </Link>
+            </div>
+          )}
 
           {/* Mobile Menu Toggle Button */}
           <button
