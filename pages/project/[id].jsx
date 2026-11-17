@@ -75,6 +75,14 @@ export default function ProjectDetails({ projectId }) {
       router.push(`/login?redirect=/project/${project?.id || ''}`);
       return;
     }
+    if (currentUser.id === project?.ownerId) {
+      addToast('You are the owner of this project. Project owners cannot claim their own codebase.', 'error');
+      return;
+    }
+    if (currentUser.banned || (currentUser.strikeCount || 0) >= 3 || (currentUser.ghostStrikes || 0) >= 3) {
+      addToast('Account suspended due to policy violations (3 strikes or banned). You cannot claim codebases.', 'error');
+      return;
+    }
     if (currentUser.credits < (project?.stakeRequired || 0)) {
       addToast(`Insufficient credits. Required: ${project.stakeRequired}, Available: ${currentUser.credits}`, 'error');
       return;
@@ -91,6 +99,13 @@ export default function ProjectDetails({ projectId }) {
         await fetchProjectDetail();
         await refreshUser();
         return;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 409) {
+          addToast(errData.error || 'Claim request failed', 'error');
+          setActionLoading(false);
+          return;
+        }
       }
     } catch (err) {
       // Handled in demo fallback below
@@ -130,6 +145,10 @@ export default function ProjectDetails({ projectId }) {
       addToast('Please log in to approve commitments', 'error');
       return;
     }
+    if (!isOwner) {
+      addToast('Unauthorized: Only the project owner can approve claims.', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -147,6 +166,13 @@ export default function ProjectDetails({ projectId }) {
         await fetchProjectDetail();
         await refreshUser();
         return;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          addToast(data.error || 'Approval rejected by server policy', 'error');
+          setActionLoading(false);
+          return;
+        }
       }
     } catch (err) {
       // Handled in fallback
@@ -182,6 +208,10 @@ export default function ProjectDetails({ projectId }) {
       addToast('Please log in first', 'error');
       return;
     }
+    if (!isOwner) {
+      addToast('Unauthorized: Only the project owner can decline claims.', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -198,6 +228,13 @@ export default function ProjectDetails({ projectId }) {
         addToast(data.message, 'info');
         await fetchProjectDetail();
         return;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          addToast(data.error || 'Rejection failed', 'error');
+          setActionLoading(false);
+          return;
+        }
       }
     } catch (err) {
       // Handled in fallback
@@ -226,6 +263,10 @@ export default function ProjectDetails({ projectId }) {
       addToast('Please log in first', 'error');
       return;
     }
+    if (!isTaker) {
+      addToast('Unauthorized: Only the assigned builder/taker can cancel this claim.', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -239,6 +280,13 @@ export default function ProjectDetails({ projectId }) {
         await fetchProjectDetail();
         await refreshUser();
         return;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          addToast(data.error || 'Withdrawal failed', 'error');
+          setActionLoading(false);
+          return;
+        }
       }
     } catch (err) {
       // Handled in fallback
@@ -263,6 +311,10 @@ export default function ProjectDetails({ projectId }) {
       addToast('Please log in first', 'error');
       return;
     }
+    if (!isTaker) {
+      addToast('Unauthorized: Only the assigned builder/taker can submit deliverables.', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -283,6 +335,13 @@ export default function ProjectDetails({ projectId }) {
         setSubmitModalOpen(false);
         await fetchProjectDetail();
         return;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          addToast(data.error || 'Submission failed', 'error');
+          setActionLoading(false);
+          return;
+        }
       }
     } catch (err) {
       // Handled in fallback
@@ -319,6 +378,10 @@ export default function ProjectDetails({ projectId }) {
       addToast('Please log in first', 'error');
       return;
     }
+    if (!isOwner) {
+      addToast('Unauthorized: Only the project owner can verify submissions.', 'error');
+      return;
+    }
     if (!activeCommitment) return;
     try {
       setActionLoading(true);
@@ -337,6 +400,13 @@ export default function ProjectDetails({ projectId }) {
         await fetchProjectDetail();
         await refreshUser();
         return;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          addToast(data.error || 'Verification failed', 'error');
+          setActionLoading(false);
+          return;
+        }
       }
     } catch (err) {
       // Handled in fallback
@@ -379,6 +449,15 @@ export default function ProjectDetails({ projectId }) {
 
   // Download project source code
   const handleDownload = () => {
+    if (!currentUser) {
+      addToast('Please sign in to access codebase archive.', 'info');
+      router.push(`/login?redirect=/project/${project?.id || ''}`);
+      return;
+    }
+    if (!isOwner && !isTaker) {
+      addToast('Access Restricted: Code is locked in escrow. Only the project owner or approved taker may download the source code.', 'error');
+      return;
+    }
     if (project?.id) {
       window.location.href = `/api/projects/${project.id}/download`;
     } else {
@@ -387,7 +466,7 @@ export default function ProjectDetails({ projectId }) {
   };
 
   const handleAnalyzeRepository = async () => {
-    if (!currentUser || userRole !== 'OWNER') {
+    if (!currentUser || !isOwner) {
       addToast('Only the project owner can analyze this repository', 'error');
       return;
     }
@@ -724,7 +803,13 @@ export default function ProjectDetails({ projectId }) {
             <div>
               {/* Stewardship Handover Protocol & Transformation */}
               <div style={{ marginBottom: 24 }}>
-                <HandoverChecklist project={project} />
+                <HandoverChecklist
+                  project={project}
+                  isOwner={isOwner}
+                  isTaker={isTaker}
+                  currentUser={currentUser}
+                  activeCommitment={activeCommitment}
+                />
               </div>
 
               {/* Milestones Section */}
