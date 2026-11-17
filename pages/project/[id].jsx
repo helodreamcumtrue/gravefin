@@ -31,6 +31,7 @@ export default function ProjectDetails({ projectId }) {
 
   useEffect(() => {
     if (id) fetchProjectDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, currentUser]);
 
   const fetchProjectDetail = async () => {
@@ -694,7 +695,7 @@ export default function ProjectDetails({ projectId }) {
                   <strong style={{ fontSize: 14.5, fontFamily: 'var(--font-display)' }}>System Enforced Trust Guarantees</strong>
                 </div>
                 <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.65 }}>
-                  <li><strong>Zero Exposure:</strong> Neither party ever sees the other's real email, name, or contact details.</li>
+                  <li><strong>Zero Exposure:</strong> Neither party ever sees the other&apos;s real email, name, or contact details.</li>
                   <li><strong>Ghost Protection:</strong> If the builder stops working for 14 days, their stake is automatically forfeited to the owner and the project relists.</li>
                   <li><strong>Review Protection:</strong> If the owner fails to verify submitted work within 7 days, the system automatically awards the reward to the builder.</li>
                 </ul>
@@ -1113,7 +1114,7 @@ export default function ProjectDetails({ projectId }) {
               Flag Bad-Faith / Plagiarized Submission
             </h3>
             <p style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: 20 }}>
-              Are you sure? Flagging bad-faith work will forfeit the builder's locked stake directly to you, apply a -15 reputation penalty to the builder, and relist this codebase in the graveyard.
+              Are you sure? Flagging bad-faith work will forfeit the builder&apos;s locked stake directly to you, apply a -15 reputation penalty to the builder, and relist this codebase in the graveyard.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary btn-sm" onClick={() => setFlagModalOpen(false)}>

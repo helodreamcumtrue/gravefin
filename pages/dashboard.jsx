@@ -30,6 +30,7 @@ export default function Dashboard() {
     if (currentUser) {
       loadDashboard();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const loadDashboard = async () => {

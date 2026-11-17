@@ -322,7 +322,7 @@ export default function Home() {
               Archival Autopsy
             </h3>
             <p style={{ fontSize: 13, color: 'rgba(17, 17, 17, 0.82)', lineHeight: 1.5, margin: 0, fontFamily: 'var(--font-sans)' }}>
-              Detailed postmortems analyze peak commit activity, maintainer turnover, and exact decline reasons so future builders don't repeat mistakes.
+              Detailed postmortems analyze peak commit activity, maintainer turnover, and exact decline reasons so future builders don&apos;t repeat mistakes.
             </p>
           </div>
 

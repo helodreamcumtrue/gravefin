@@ -35,7 +35,7 @@ export default function Footer() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'rgba(17, 17, 17, 0.7)', gap: 8, paddingBottom: 8 }}>
         <p style={{ margin: 0 }}>A non-morbid preservation library for abandoned software ideas and open provenance records.</p>
         <p style={{ margin: 0, fontStyle: 'italic', fontFamily: 'var(--font-hand)', fontSize: 16, color: 'var(--color-ink)' }}>
-          "Not forgotten. Just waiting."
+          &ldquo;Not forgotten. Just waiting.&rdquo;
         </p>
       </div>
     </footer>

@@ -152,7 +152,7 @@ export default function ArchivistWorkbenchPage() {
           <div>
             {userProjects.length === 0 && currentUser && (
               <div className="sketch-card-static" style={{ padding: '10px 16px', marginBottom: 16, backgroundColor: 'rgba(232, 162, 74, 0.15)', fontSize: 13, fontFamily: 'var(--font-mono)' }}>
-                ℹ️ Showing featured graveyard specimens. You haven't accessioned any artifacts under <strong>{currentUser.alias}</strong> yet. Click "Accession New Specimen" to list one!
+                ℹ️ Showing featured graveyard specimens. You haven&apos;t accessioned any artifacts under <strong>{currentUser.alias}</strong> yet. Click &ldquo;Accession New Specimen&rdquo; to list one!
               </div>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
@@ -177,7 +177,7 @@ export default function ArchivistWorkbenchPage() {
                   <span>Yesterday at 14:20</span>
                 </div>
                 <p style={{ margin: 0, fontSize: 13.5, color: 'rgba(17, 17, 17, 0.85)', lineHeight: 1.45 }}>
-                  "Verified WAL mode configuration on SQLite database file. Write lock latency reduced by 85%."
+                  &ldquo;Verified WAL mode configuration on SQLite database file. Write lock latency reduced by 85%.&rdquo;
                 </p>
                 <Link href={`/project/${p1.id}`} style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--color-ink)', textDecoration: 'underline', display: 'inline-block', marginTop: 6 }}>
                   View Specimen Record →
@@ -190,7 +190,7 @@ export default function ArchivistWorkbenchPage() {
                   <span>3 days ago</span>
                 </div>
                 <p style={{ margin: 0, fontSize: 13.5, color: 'rgba(17, 17, 17, 0.85)', lineHeight: 1.45 }}>
-                  "Suggested decoupling transport provider layer to allow self-hosted Mapbox or open-source Leaflet GeoJSON feeds."
+                  &ldquo;Suggested decoupling transport provider layer to allow self-hosted Mapbox or open-source Leaflet GeoJSON feeds.&rdquo;
                 </p>
                 <Link href={`/project/${p2.id}`} style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--color-ink)', textDecoration: 'underline', display: 'inline-block', marginTop: 6 }}>
                   View Specimen Record →
@@ -203,7 +203,7 @@ export default function ArchivistWorkbenchPage() {
                   <span>1 week ago</span>
                 </div>
                 <p style={{ margin: 0, fontSize: 13.5, color: 'rgba(17, 17, 17, 0.85)', lineHeight: 1.45 }}>
-                  "C++ DSP core compiles cleanly with Emscripten. Web Audio AudioWorklet node buffer alignment confirmed."
+                  &ldquo;C++ DSP core compiles cleanly with Emscripten. Web Audio AudioWorklet node buffer alignment confirmed.&rdquo;
                 </p>
                 <Link href={`/project/${p7.id}`} style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--color-ink)', textDecoration: 'underline', display: 'inline-block', marginTop: 6 }}>
                   View Specimen Record →
