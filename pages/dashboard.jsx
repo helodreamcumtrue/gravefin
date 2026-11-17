@@ -36,50 +36,52 @@ export default function Dashboard() {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      // 1. Fetch user projects & commitments
-      const res = await fetch('/api/users/me', {
-        headers: { 'x-user-id': currentUser.id }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUserData(data);
-
-        // 2. Fetch immutable ledger entries
-        const ledgerRes = await fetch('/api/users/me/ledger', {
+      try {
+        // 1. Fetch user projects & commitments
+        const res = await fetch('/api/users/me', {
           headers: { 'x-user-id': currentUser.id }
         });
-        if (ledgerRes.ok) {
-          const ledgerData = await ledgerRes.json();
-          setLedger(ledgerData.ledger || []);
-        }
-        setLoading(false);
-        return;
-      }
-    } catch (err) {
-      // Handled in demo fallback below
-    }
+        if (res.ok) {
+          const data = await res.json();
+          setUserData(data);
 
-    // Static / GitHub Pages fallback
-    const allProjects = getLocalProjects();
-    const owned = allProjects.filter(p => p.ownerId === currentUser.id);
-    const userCommitments = [];
-    allProjects.forEach(p => {
-      (p.commitments || []).forEach(c => {
-        if (c.takerId === currentUser.id) {
-          userCommitments.push({ ...c, project: p });
+          // 2. Fetch immutable ledger entries
+          const ledgerRes = await fetch('/api/users/me/ledger', {
+            headers: { 'x-user-id': currentUser.id }
+          });
+          if (ledgerRes.ok) {
+            const ledgerData = await ledgerRes.json();
+            setLedger(ledgerData.ledger || []);
+          }
+          return;
         }
+      } catch (err) {
+        // Handled in demo fallback below
+      }
+
+      // Static / GitHub Pages fallback
+      const allProjects = getLocalProjects();
+      const owned = allProjects.filter(p => p.ownerId === currentUser.id);
+      const userCommitments = [];
+      allProjects.forEach(p => {
+        (p.commitments || []).forEach(c => {
+          if (c.takerId === currentUser.id) {
+            userCommitments.push({ ...c, project: p });
+          }
+        });
       });
-    });
-    setUserData({
-      user: currentUser,
-      ownedProjects: owned,
-      commitments: userCommitments
-    });
-    setLedger([
-      { id: 'l1', type: 'REWARD_CREDIT', amount: 500, createdAt: new Date(Date.now() - 20 * 86400000).toISOString(), notes: 'Genesis builder grant' },
-      { id: 'l2', type: 'REWARD_CREDIT', amount: 150, createdAt: new Date(Date.now() - 5 * 86400000).toISOString(), notes: 'Platform milestone reward' }
-    ]);
-    setLoading(false);
+      setUserData({
+        user: currentUser,
+        ownedProjects: owned,
+        commitments: userCommitments
+      });
+      setLedger([
+        { id: 'l1', type: 'REWARD_CREDIT', amount: 500, createdAt: new Date(Date.now() - 20 * 86400000).toISOString(), notes: 'Genesis builder grant' },
+        { id: 'l2', type: 'REWARD_CREDIT', amount: 150, createdAt: new Date(Date.now() - 5 * 86400000).toISOString(), notes: 'Platform milestone reward' }
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!currentUser) {

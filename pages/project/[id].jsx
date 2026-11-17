@@ -37,35 +37,38 @@ export default function ProjectDetails({ projectId }) {
   const fetchProjectDetail = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/projects/${id}`, {
-        headers: currentUser ? { 'x-user-id': currentUser.id } : {}
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProject(data.project);
-        setActiveCommitment(data.activeCommitment);
-        setUserRole(data.userRole);
-        return;
+      try {
+        const res = await fetch(`/api/projects/${id}`, {
+          headers: currentUser ? { 'x-user-id': currentUser.id } : {}
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setProject(data.project);
+          setActiveCommitment(data.activeCommitment);
+          setUserRole(data.userRole);
+          return;
+        }
+      } catch (err) {
+        // In static / GitHub Pages demo mode or network error
       }
-    } catch (err) {
-      // In static / GitHub Pages demo mode
-    }
 
-    // Fallback in static / GitHub Pages demo mode
-    const allProjects = getLocalProjects();
-    const target = allProjects.find(p => p.id === id) || allProjects[0];
-    if (target) {
-      setProject(target);
-      const commitment = target.commitments?.[0] || null;
-      setActiveCommitment(commitment);
-      let role = 'GUEST';
-      if (currentUser) {
-        if (currentUser.id === target.ownerId) role = 'OWNER';
-        else if (commitment && commitment.takerId === currentUser.id) role = 'TAKER';
+      // Fallback in static / GitHub Pages demo mode
+      const allProjects = getLocalProjects();
+      const target = allProjects.find(p => p.id === id) || allProjects[0];
+      if (target) {
+        setProject(target);
+        const commitment = target.commitments?.[0] || null;
+        setActiveCommitment(commitment);
+        let role = 'GUEST';
+        if (currentUser) {
+          if (currentUser.id === target.ownerId) role = 'OWNER';
+          else if (commitment && commitment.takerId === currentUser.id) role = 'TAKER';
+        }
+        setUserRole(role);
       }
-      setUserRole(role);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // 1. Taker claims project

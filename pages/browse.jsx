@@ -48,19 +48,22 @@ export default function Browse() {
   }, [router.query.q, router.query.search]);
 
   const fetchProjects = async () => {
-    setLoading(true);
     try {
-      const res = await fetch('/api/projects');
-      if (res.ok) {
-        const data = await res.json();
-        setProjects(data.projects || []);
-        return;
+      setLoading(true);
+      try {
+        const res = await fetch('/api/projects');
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data.projects || []);
+          return;
+        }
+      } catch (err) {
+        // In static / GitHub Pages demo mode or network error
       }
-    } catch (err) {
-      // In static / GitHub Pages demo mode
+      setProjects(getLocalProjects());
+    } finally {
+      setLoading(false);
     }
-    setProjects(getLocalProjects());
-    setLoading(false);
   };
 
   const filteredProjects = useMemo(() => {

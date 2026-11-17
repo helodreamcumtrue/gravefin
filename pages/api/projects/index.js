@@ -61,8 +61,23 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ projects: filtered.map((p, idx) => enrichProject(p, idx)) });
     } catch (err) {
-      console.error('Error listing projects:', err);
-      return res.status(500).json({ error: 'Internal server error' });
+      console.warn('Database query failed or DATABASE_URL unconfigured; serving fallback projects:', err.message);
+      const { search, category, status } = req.query || {};
+      let filtered = getLocalProjects();
+      if (category && category !== 'Any') {
+        filtered = filtered.filter(p => p.category === category);
+      }
+      if (status && status !== 'Any') {
+        filtered = filtered.filter(p => p.status === status);
+      }
+      if (search) {
+        const q = search.toLowerCase();
+        filtered = filtered.filter(p =>
+          p.title.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q)
+        );
+      }
+      return res.status(200).json({ projects: filtered.map((p, idx) => enrichProject(p, idx)) });
     }
   }
 

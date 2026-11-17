@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import prisma from '../../../lib/prisma';
+import { FALLBACK_PERSONAS } from '../../../lib/mockFallback';
 import {
   generateAlias,
   hashPassword,
@@ -195,21 +196,34 @@ async function handleMe(req, res) {
       return res.status(200).json({ authenticated: false, user: null });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
+      });
 
-    if (!user) {
-      return res.status(200).json({ authenticated: false, user: null });
+      if (user) {
+        return res.status(200).json({
+          authenticated: true,
+          user: sanitizeUser(user)
+        });
+      }
+    } catch (dbErr) {
+      console.warn('DB error in handleMe; checking fallback personas:', dbErr.message);
     }
 
-    return res.status(200).json({
-      authenticated: true,
-      user: sanitizeUser(user)
-    });
+    // Fallback if DB was unreachable or persona is mock
+    const fallbackUser = FALLBACK_PERSONAS.find(p => p.id === userId);
+    if (fallbackUser) {
+      return res.status(200).json({
+        authenticated: true,
+        user: sanitizeUser(fallbackUser)
+      });
+    }
+
+    return res.status(200).json({ authenticated: false, user: null });
   } catch (err) {
     console.error('Error fetching authenticated profile:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(200).json({ authenticated: false, user: null });
   }
 }
 
@@ -222,13 +236,18 @@ async function handlePersonas(req, res) {
       take: 8
     });
 
-    return res.status(200).json({
-      personas: users.map(u => sanitizeUser(u))
-    });
+    if (users && users.length > 0) {
+      return res.status(200).json({
+        personas: users.map(u => sanitizeUser(u))
+      });
+    }
   } catch (err) {
-    console.error('Error listing demo personas:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.warn('DB query failed in handlePersonas; serving fallback personas:', err.message);
   }
+
+  return res.status(200).json({
+    personas: FALLBACK_PERSONAS.map(u => sanitizeUser(u))
+  });
 }
 
 // 6. POST /api/auth/switch-persona

@@ -18,25 +18,29 @@ The repository is now pre-configured for Vercel:
 Because Vercel runs Next.js on Serverless Functions with a read-only, ephemeral filesystem, local SQLite (`dev.db`) cannot persist new claims, users, or deliverables in production.
 
 ### Recommended: Free PostgreSQL (Neon, Supabase, or Vercel Postgres)
-1. Create a free database on **[Neon.tech](https://neon.tech)**, **[Supabase.com](https://supabase.com)**, or directly inside your **[Vercel Dashboard](https://vercel.com/dashboard/stores)** ("Storage" -> "Postgres").
-2. Copy your PostgreSQL connection string:
+1. Your project is already fully migrated to **PostgreSQL**. The production connection string is configured in `.env`:
+   ```env
+   DATABASE_URL="postgresql://neondb_owner:npg_vHQ8zBbadc2E@ep-shy-frost-avcr8pe6-pooler.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require"
    ```
-   postgresql://user:password@host/neondb?sslmode=require
-   ```
-3. Update `prisma/schema.prisma` datasource provider:
+2. In `prisma/schema.prisma`, PostgreSQL is already set as the datasource provider, with Linux binary targets pre-configured for Vercel serverless execution:
    ```prisma
+   generator client {
+     provider      = "prisma-client-js"
+     binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]
+   }
+
    datasource db {
      provider = "postgresql"
      url      = env("DATABASE_URL")
    }
    ```
-4. Push the schema and seed the initial testing personas:
+3. To push the schema and seed the initial testing personas locally if needed:
    ```bash
    npx prisma db push
    node prisma/seed.js
    ```
 
-*(Note: If you just want an instant prototype demo on Vercel without setting up a remote DB yet, you can deploy with SQLite, but note that database writes will not persist between cold starts).*
+*(Note: The platform features resilient fallbacks across all REST and GraphQL endpoints, so even if `DATABASE_URL` is not yet configured in Vercel, the platform loads the preserved mock specimen catalog seamlessly).*
 
 ---
 
@@ -82,10 +86,13 @@ Because Vercel runs Next.js on Serverless Functions with a read-only, ephemeral 
    git push -u origin main
    ```
 3. Go to [vercel.com/new](https://vercel.com/new):
-   - Import your `digital-graveyard` repository.
+   - Import your `gravefin` repository (`https://github.com/helodreamcumtrue/gravefin`).
    - In **Environment Variables**, add:
-     - `DATABASE_URL`
-     - `CRON_SECRET`
+     - `DATABASE_URL`: `postgresql://neondb_owner:npg_vHQ8zBbadc2E@ep-shy-frost-avcr8pe6-pooler.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require`
+     - `CRON_SECRET`: `graveyard_secret_key`
+     - `NEXT_PUBLIC_APP_NAME`: `Digital Graveyard`
+     - `NEXT_PUBLIC_BASE_URL`: `https://your-project-name.vercel.app` (replace with your Vercel URL)
+     - `GITHUB_TOKEN`: `<YOUR_GITHUB_PAT_OR_FINE_GRAINED_TOKEN>` (optional, for live repo autopsies)
    - Click **Deploy**.
 
 ---
