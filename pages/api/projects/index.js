@@ -1,6 +1,6 @@
 import prisma from '../../../lib/prisma';
-import { parseSession } from '../../../lib/auth';
-import { enrichProject } from '../../../lib/mockFallback';
+import { parseSession, resolveDbUser } from '../../../lib/auth';
+import { enrichProject, FALLBACK_PROJECTS } from '../../../lib/mockFallback';
 import { analyzeGitHubRepository, parseGitHubRepositoryUrl } from '../../../lib/githubIntelligence';
 
 export default async function handler(req, res) {
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     } catch (err) {
       console.warn('Database query failed or DATABASE_URL unconfigured; serving fallback projects:', err.message);
       const { search, category, status } = req.query || {};
-      let filtered = getLocalProjects();
+      let filtered = [...FALLBACK_PROJECTS];
       if (category && category !== 'Any') {
         filtered = filtered.filter(p => p.category === category);
       }
@@ -83,16 +83,18 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const userId = parseSession(req);
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+      const rawUserId = parseSession(req);
+      if (!rawUserId) {
+        return res.status(401).json({ error: 'Unauthorized. Please log in.' });
       }
 
-      const user = await prisma.user.findUnique({ where: { id: userId } });
+      const user = await resolveDbUser(prisma, rawUserId);
       if (!user) return res.status(401).json({ error: 'User not found' });
       if (user.banned) {
         return res.status(403).json({ error: 'Your account is restricted due to ghost strikes (3+ strikes).' });
       }
+
+      const userId = user.id;
 
       const {
         title,
@@ -116,6 +118,18 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'GitHub repository URL must look like https://github.com/owner/repository' });
       }
 
+      const initialAutopsy = {
+        revivalScore: Math.floor(72 + Math.random() * 22),
+        autopsyStatus: 'ABANDONED',
+        autopsyCause: category === 'Campus Graveyard' || category === 'Education' ? 'graduation' : 'time-constraints',
+        autopsyLastActivity: '3 months ago',
+        autopsyDifficulty: Number(completion) > 60 ? 'Surface Dig' : Number(completion) > 30 ? 'Moderate Excavation' : 'Deep Excavation',
+        peakActivityMonth: 'Sprint Alpha',
+        peakActivityCommits: Math.floor(180 + Math.random() * 200),
+        peakActivityContributors: Math.floor(2 + Math.random() * 3),
+        peakActivityPullRequests: Math.floor(4 + Math.random() * 8)
+      };
+
       let project = await prisma.project.create({
         data: {
           ownerId: userId,
@@ -129,20 +143,36 @@ export default async function handler(req, res) {
           fileName,
           fileUrl,
           githubRepoUrl: githubRepoUrl ? parseGitHubRepositoryUrl(githubRepoUrl).url : null,
-          status: 'LISTED'
+          status: 'LISTED',
+          ...initialAutopsy
+        },
+        include: {
+          owner: {
+            select: { id: true, alias: true, reputation: true, ghostStrikes: true, email: true }
+          },
+          commitments: true
         }
       });
 
       if (githubRepoUrl && process.env.GITHUB_TOKEN) {
         try {
           const intelligence = await analyzeGitHubRepository(githubRepoUrl);
-          project = await prisma.project.update({ where: { id: project.id }, data: intelligence });
+          project = await prisma.project.update({
+            where: { id: project.id },
+            data: intelligence,
+            include: {
+              owner: {
+                select: { id: true, alias: true, reputation: true, ghostStrikes: true, email: true }
+              },
+              commitments: true
+            }
+          });
         } catch (analysisError) {
           console.warn('Initial GitHub repository analysis skipped:', analysisError.message);
         }
       }
 
-      return res.status(201).json({ project });
+      return res.status(201).json({ project: enrichProject(project) });
     } catch (err) {
       console.error('Error creating project:', err);
       return res.status(500).json({ error: 'Internal server error' });

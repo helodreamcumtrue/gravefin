@@ -1,6 +1,6 @@
 import prisma from '../../../lib/prisma';
-import { parseSession, sanitizeUser } from '../../../lib/auth';
-import { FALLBACK_PERSONAS, getLocalProjects } from '../../../lib/mockFallback';
+import { parseSession, resolveDbUser, sanitizeUser } from '../../../lib/auth';
+import { FALLBACK_PERSONAS, FALLBACK_PROJECTS } from '../../../lib/mockFallback';
 
 /**
  * Unified Users API Route Handler
@@ -107,61 +107,64 @@ async function handleLeaderboard(req, res) {
 // 1. GET /api/users/me
 async function handleGetMe(req, res) {
   try {
-    const userId = parseSession(req);
-    if (!userId) {
+    const rawUserId = parseSession(req);
+    if (!rawUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          ownedProjects: {
-            orderBy: { createdAt: 'desc' },
-            include: {
-              commitments: {
-                where: {
-                  status: { in: ['PENDING_APPROVAL', 'ACTIVE', 'SUBMITTED', 'COMPLETED'] }
-                },
-                include: {
-                  taker: {
-                    select: { id: true, alias: true, reputation: true, ghostStrikes: true }
+      const dbUser = await resolveDbUser(prisma, rawUserId);
+      if (dbUser) {
+        const user = await prisma.user.findUnique({
+          where: { id: dbUser.id },
+          include: {
+            ownedProjects: {
+              orderBy: { createdAt: 'desc' },
+              include: {
+                commitments: {
+                  where: {
+                    status: { in: ['PENDING_APPROVAL', 'ACTIVE', 'SUBMITTED', 'COMPLETED'] }
                   },
-                  milestones: true
-                }
-              }
-            }
-          },
-          commitments: {
-            orderBy: { committedAt: 'desc' },
-            include: {
-              project: {
-                include: {
-                  owner: {
-                    select: { id: true, alias: true, reputation: true }
+                  include: {
+                    taker: {
+                      select: { id: true, alias: true, reputation: true, ghostStrikes: true }
+                    },
+                    milestones: true
                   }
                 }
-              },
-              milestones: true
+              }
+            },
+            commitments: {
+              orderBy: { committedAt: 'desc' },
+              include: {
+                project: {
+                  include: {
+                    owner: {
+                      select: { id: true, alias: true, reputation: true }
+                    }
+                  }
+                },
+                milestones: true
+              }
             }
           }
-        }
-      });
-
-      if (user) {
-        return res.status(200).json({
-          user: sanitizeUser(user, true),
-          ownedProjects: user.ownedProjects,
-          commitments: user.commitments
         });
+
+        if (user) {
+          return res.status(200).json({
+            user: sanitizeUser(user, true),
+            ownedProjects: user.ownedProjects,
+            commitments: user.commitments
+          });
+        }
       }
     } catch (dbErr) {
       console.warn('DB error in handleGetMe; falling back to local user store:', dbErr.message);
     }
 
-    // Fallback for Vercel
-    const fallbackUser = FALLBACK_PERSONAS.find(p => p.id === userId) || FALLBACK_PERSONAS[0];
-    const all = getLocalProjects();
+    // Fallback for offline/demo
+    const fallbackUser = FALLBACK_PERSONAS.find(p => p.id === rawUserId) || FALLBACK_PERSONAS[0];
+    const all = FALLBACK_PROJECTS;
     const owned = all.filter(p => p.ownerId === fallbackUser.id);
     const commitments = [];
     all.forEach(p => {
@@ -184,10 +187,13 @@ async function handleGetMe(req, res) {
 // 2. GET /api/users/me/ledger
 async function handleGetLedger(req, res) {
   try {
-    const userId = parseSession(req);
-    if (!userId) {
+    const rawUserId = parseSession(req);
+    if (!rawUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+
+    const user = await resolveDbUser(prisma, rawUserId);
+    const userId = user ? user.id : rawUserId;
 
     const ledger = await prisma.ledgerEntry.findMany({
       where: { userId },

@@ -1,5 +1,5 @@
 import prisma from '../../../lib/prisma';
-import { parseSession } from '../../../lib/auth';
+import { parseSession, resolveDbUser } from '../../../lib/auth';
 import { recordLedgerEntry } from '../../../lib/ledger';
 
 /**
@@ -48,10 +48,14 @@ async function handleSubmit(req, res, id) {
   }
 
   try {
-    const takerId = parseSession(req);
-    if (!takerId) {
+    const rawTakerId = parseSession(req);
+    if (!rawTakerId) {
       return res.status(401).json({ error: 'Unauthorized. Please log in.' });
     }
+
+    const taker = await resolveDbUser(prisma, rawTakerId);
+    if (!taker) return res.status(404).json({ error: 'User not found' });
+    const takerId = taker.id;
 
     const { notes = '', deliverableUrl = '' } = req.body || {};
 
@@ -106,10 +110,14 @@ async function handleWithdraw(req, res, id) {
   }
 
   try {
-    const takerId = parseSession(req);
-    if (!takerId) {
+    const rawTakerId = parseSession(req);
+    if (!rawTakerId) {
       return res.status(401).json({ error: 'Unauthorized. Please log in.' });
     }
+
+    const taker = await resolveDbUser(prisma, rawTakerId);
+    if (!taker) return res.status(404).json({ error: 'User not found' });
+    const takerId = taker.id;
 
     const commitment = await prisma.commitment.findUnique({
       where: { id },
@@ -163,10 +171,14 @@ async function handleVerify(req, res, id) {
   }
 
   try {
-    const ownerId = parseSession(req);
-    if (!ownerId) {
+    const rawOwnerId = parseSession(req);
+    if (!rawOwnerId) {
       return res.status(401).json({ error: 'Unauthorized. Please log in.' });
     }
+
+    const owner = await resolveDbUser(prisma, rawOwnerId);
+    if (!owner) return res.status(404).json({ error: 'Owner user not found' });
+    const ownerId = owner.id;
 
     const { decision } = req.body || {}; // 'approve' | 'flagBadFaith'
 
@@ -299,10 +311,14 @@ async function handleMilestoneComplete(req, res, id, mid) {
   }
 
   try {
-    const takerId = parseSession(req);
-    if (!takerId) {
+    const rawTakerId = parseSession(req);
+    if (!rawTakerId) {
       return res.status(401).json({ error: 'Unauthorized. Please log in.' });
     }
+
+    const taker = await resolveDbUser(prisma, rawTakerId);
+    if (!taker) return res.status(404).json({ error: 'User not found' });
+    const takerId = taker.id;
 
     const commitment = await prisma.commitment.findUnique({
       where: { id },

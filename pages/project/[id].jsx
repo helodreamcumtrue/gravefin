@@ -104,11 +104,9 @@ export default function ProjectDetails({ projectId }) {
         return;
       } else {
         const errData = await res.json().catch(() => ({}));
-        if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 409) {
-          addToast(errData.error || 'Claim request failed', 'error');
-          setActionLoading(false);
-          return;
-        }
+        addToast(errData.error || 'Claim request failed', 'error');
+        setActionLoading(false);
+        return;
       }
     } catch (err) {
       // Handled in demo fallback below
@@ -171,11 +169,9 @@ export default function ProjectDetails({ projectId }) {
         return;
       } else {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 400 || res.status === 401 || res.status === 403) {
-          addToast(data.error || 'Approval rejected by server policy', 'error');
-          setActionLoading(false);
-          return;
-        }
+        addToast(data.error || 'Approval rejected by server policy', 'error');
+        setActionLoading(false);
+        return;
       }
     } catch (err) {
       // Handled in fallback
@@ -233,11 +229,9 @@ export default function ProjectDetails({ projectId }) {
         return;
       } else {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 400 || res.status === 401 || res.status === 403) {
-          addToast(data.error || 'Rejection failed', 'error');
-          setActionLoading(false);
-          return;
-        }
+        addToast(data.error || 'Rejection failed', 'error');
+        setActionLoading(false);
+        return;
       }
     } catch (err) {
       // Handled in fallback
@@ -285,11 +279,9 @@ export default function ProjectDetails({ projectId }) {
         return;
       } else {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 400 || res.status === 401 || res.status === 403) {
-          addToast(data.error || 'Withdrawal failed', 'error');
-          setActionLoading(false);
-          return;
-        }
+        addToast(data.error || 'Withdrawal failed', 'error');
+        setActionLoading(false);
+        return;
       }
     } catch (err) {
       // Handled in fallback
@@ -340,11 +332,9 @@ export default function ProjectDetails({ projectId }) {
         return;
       } else {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 400 || res.status === 401 || res.status === 403) {
-          addToast(data.error || 'Submission failed', 'error');
-          setActionLoading(false);
-          return;
-        }
+        addToast(data.error || 'Submission failed', 'error');
+        setActionLoading(false);
+        return;
       }
     } catch (err) {
       // Handled in fallback
@@ -405,11 +395,9 @@ export default function ProjectDetails({ projectId }) {
         return;
       } else {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 400 || res.status === 401 || res.status === 403) {
-          addToast(data.error || 'Verification failed', 'error');
-          setActionLoading(false);
-          return;
-        }
+        addToast(data.error || 'Verification failed', 'error');
+        setActionLoading(false);
+        return;
       }
     } catch (err) {
       // Handled in fallback
@@ -518,8 +506,29 @@ export default function ProjectDetails({ projectId }) {
     tags = (project.techTags || '').split(',').map(s => s.trim()).filter(Boolean);
   }
 
-  const isOwner = userRole === 'OWNER';
-  const isTaker = userRole === 'TAKER';
+  const isOwner = userRole === 'OWNER' || Boolean(
+    currentUser && project && (
+      currentUser.id === project.ownerId ||
+      (currentUser.email && project.owner?.email && currentUser.email.toLowerCase() === project.owner.email.toLowerCase()) ||
+      (currentUser.alias && project.owner?.alias && currentUser.alias === project.owner.alias)
+    )
+  );
+  const isTaker = userRole === 'TAKER' || Boolean(
+    currentUser && (
+      (activeCommitment && (
+        currentUser.id === activeCommitment.takerId ||
+        (currentUser.email && activeCommitment.taker?.email && currentUser.email.toLowerCase() === activeCommitment.taker.email.toLowerCase()) ||
+        (currentUser.alias && activeCommitment.taker?.alias && currentUser.alias === activeCommitment.taker.alias)
+      )) ||
+      (project?.commitments && project.commitments.some(c =>
+        ['PENDING_APPROVAL', 'ACTIVE', 'SUBMITTED', 'COMPLETED'].includes(c.status) && (
+          currentUser.id === c.takerId ||
+          (currentUser.email && c.taker?.email && currentUser.email.toLowerCase() === c.taker.email.toLowerCase()) ||
+          (currentUser.alias && c.taker?.alias && currentUser.alias === c.taker.alias)
+        )
+      ))
+    )
+  );
   const isPending = activeCommitment?.status === 'PENDING_APPROVAL';
   const isActive = activeCommitment?.status === 'ACTIVE';
   const isSubmitted = activeCommitment?.status === 'SUBMITTED';

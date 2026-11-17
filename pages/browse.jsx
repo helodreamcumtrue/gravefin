@@ -50,17 +50,27 @@ export default function Browse() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
+      let serverProjects = [];
       try {
         const res = await fetch('/api/projects');
         if (res.ok) {
           const data = await res.json();
-          setProjects(data.projects || []);
-          return;
+          serverProjects = data.projects || [];
         }
       } catch (err) {
         // In static / GitHub Pages demo mode or network error
       }
-      setProjects(getLocalProjects());
+
+      // Merge server projects with any locally created projects that aren't yet on server
+      const localProjects = getLocalProjects();
+      const localOnly = localProjects.filter(lp => !serverProjects.some(sp => sp.id === lp.id));
+      const combined = [...localOnly, ...serverProjects];
+
+      if (combined.length > 0) {
+        setProjects(combined);
+      } else {
+        setProjects(localProjects);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import prisma from '../../../lib/prisma';
-import { parseSession } from '../../../lib/auth';
+import { parseSession, resolveDbUser } from '../../../lib/auth';
 import { recordLedgerEntry } from '../../../lib/ledger';
-import { enrichProject } from '../../../lib/mockFallback';
+import { enrichProject, FALLBACK_PROJECTS } from '../../../lib/mockFallback';
 import { analyzeGitHubRepository } from '../../../lib/githubIntelligence';
 
 /**
@@ -56,8 +56,12 @@ async function handleAnalyze(req, res, id) {
   }
 
   try {
-    const ownerId = parseSession(req);
-    if (!ownerId) return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+    const rawOwnerId = parseSession(req);
+    if (!rawOwnerId) return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+
+    const owner = await resolveDbUser(prisma, rawOwnerId);
+    if (!owner) return res.status(404).json({ error: 'Owner user not found' });
+    const ownerId = owner.id;
 
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -66,7 +70,7 @@ async function handleAnalyze(req, res, id) {
 
     const intelligence = await analyzeGitHubRepository(project.githubRepoUrl);
     const updatedProject = await prisma.project.update({ where: { id }, data: intelligence });
-    return res.status(200).json({ project: updatedProject, message: 'GitHub repository intelligence refreshed successfully.' });
+    return res.status(200).json({ project: enrichProject(updatedProject), message: 'GitHub repository intelligence refreshed successfully.' });
   } catch (err) {
     console.error('GitHub repository analysis error:', err);
     return res.status(502).json({ error: err.message || 'GitHub repository analysis failed' });
@@ -76,13 +80,15 @@ async function handleAnalyze(req, res, id) {
 // 1. GET /api/projects/:id
 async function handleGetProject(req, res, id) {
   try {
-    const currentUserId = parseSession(req);
+    const rawUserId = parseSession(req);
+    const user = await resolveDbUser(prisma, rawUserId);
+    const currentUserId = user ? user.id : rawUserId;
 
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
         owner: {
-          select: { id: true, alias: true, reputation: true, ghostStrikes: true }
+          select: { id: true, alias: true, reputation: true, ghostStrikes: true, email: true }
         },
         commitments: {
           where: {
@@ -91,7 +97,7 @@ async function handleGetProject(req, res, id) {
           orderBy: { committedAt: 'desc' },
           include: {
             taker: {
-              select: { id: true, alias: true, reputation: true, ghostStrikes: true }
+              select: { id: true, alias: true, reputation: true, ghostStrikes: true, email: true }
             },
             milestones: true
           }
@@ -100,8 +106,7 @@ async function handleGetProject(req, res, id) {
     });
 
     if (!project) {
-      const all = getLocalProjects();
-      const fallbackTarget = all.find(p => p.id === id);
+      const fallbackTarget = FALLBACK_PROJECTS.find(p => p.id === id);
       if (fallbackTarget) {
         return res.status(200).json({
           project: enrichProject(fallbackTarget),
@@ -116,8 +121,8 @@ async function handleGetProject(req, res, id) {
       ['PENDING_APPROVAL', 'ACTIVE', 'SUBMITTED'].includes(c.status)
     ) || project.commitments[0] || null;
 
-    const isOwner = currentUserId === project.ownerId;
-    const isTaker = activeCommitment && currentUserId === activeCommitment.takerId;
+    const isOwner = Boolean(user && project.ownerId === user.id);
+    const isTaker = Boolean(activeCommitment && user && activeCommitment.takerId === user.id);
 
     return res.status(200).json({
       project: enrichProject(project),
@@ -126,8 +131,7 @@ async function handleGetProject(req, res, id) {
     });
   } catch (err) {
     console.warn('DB query failed in handleGetProject; serving fallback:', err.message);
-    const all = getLocalProjects();
-    const target = all.find(p => p.id === id) || all[0];
+    const target = FALLBACK_PROJECTS.find(p => p.id === id) || FALLBACK_PROJECTS[0];
     if (target) {
       return res.status(200).json({
         project: enrichProject(target),
@@ -146,16 +150,17 @@ async function handleCommit(req, res, id) {
   }
 
   try {
-    const takerId = parseSession(req);
-    if (!takerId) {
+    const rawTakerId = parseSession(req);
+    if (!rawTakerId) {
       return res.status(401).json({ error: 'Unauthorized. Please log in.' });
     }
 
-    const taker = await prisma.user.findUnique({ where: { id: takerId } });
+    const taker = await resolveDbUser(prisma, rawTakerId);
     if (!taker) return res.status(404).json({ error: 'User not found' });
     if (taker.banned) {
       return res.status(403).json({ error: 'Account restricted due to ghost strikes (3+ strikes).' });
     }
+    const takerId = taker.id;
 
     const project = await prisma.project.findUnique({
       where: { id },
@@ -240,10 +245,14 @@ async function handleApprove(req, res, id) {
   }
 
   try {
-    const ownerId = parseSession(req);
-    if (!ownerId) {
+    const rawOwnerId = parseSession(req);
+    if (!rawOwnerId) {
       return res.status(401).json({ error: 'Unauthorized. Please log in.' });
     }
+
+    const owner = await resolveDbUser(prisma, rawOwnerId);
+    if (!owner) return res.status(404).json({ error: 'Owner user not found' });
+    const ownerId = owner.id;
 
     const { commitmentId } = req.body || {};
 
@@ -251,7 +260,7 @@ async function handleApprove(req, res, id) {
       where: { id },
       include: {
         commitments: {
-          where: { id: commitmentId },
+          where: commitmentId ? { id: commitmentId } : { status: 'PENDING_APPROVAL' },
           include: { taker: true }
         }
       }
@@ -325,10 +334,14 @@ async function handleReject(req, res, id) {
   }
 
   try {
-    const ownerId = parseSession(req);
-    if (!ownerId) {
+    const rawOwnerId = parseSession(req);
+    if (!rawOwnerId) {
       return res.status(401).json({ error: 'Unauthorized. Please log in.' });
     }
+
+    const owner = await resolveDbUser(prisma, rawOwnerId);
+    if (!owner) return res.status(404).json({ error: 'Owner user not found' });
+    const ownerId = owner.id;
 
     const { commitmentId } = req.body || {};
 
@@ -336,7 +349,7 @@ async function handleReject(req, res, id) {
       where: { id },
       include: {
         commitments: {
-          where: { id: commitmentId }
+          where: commitmentId ? { id: commitmentId } : { status: 'PENDING_APPROVAL' }
         }
       }
     });
@@ -348,7 +361,7 @@ async function handleReject(req, res, id) {
 
     const commitment = project.commitments[0];
     if (!commitment) {
-      return res.status(400).json({ error: 'Commitment not found' });
+      return res.status(400).json({ error: 'No commitment found to reject' });
     }
 
     await prisma.commitment.update({

@@ -8,6 +8,7 @@ import {
   sanitizeUser,
   createSessionToken,
   parseSession,
+  resolveDbUser,
   serializeSessionCookie,
   serializeClearCookie,
   parseCookieHeader
@@ -197,9 +198,7 @@ async function handleMe(req, res) {
     }
 
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId }
-      });
+      const user = await resolveDbUser(prisma, userId);
 
       if (user) {
         return res.status(200).json({
@@ -262,9 +261,7 @@ async function handleSwitchPersona(req, res) {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
+    const user = await resolveDbUser(prisma, userId);
 
     if (!user) {
       return res.status(404).json({ error: 'User persona not found' });

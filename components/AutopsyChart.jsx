@@ -1,26 +1,34 @@
 import React from 'react';
 import { Activity, AlertTriangle, Lightbulb } from 'lucide-react';
 
-export default function AutopsyChart({ report }) {
-  if (!report) {
-    report = {
-      declinePattern: 'Gradual Decline',
-      peakPeriod: 'Q2 2024 (380 Commits)',
-      ownerStatedReason: 'Core student maintainers graduated and relocated. Handing stewardship over to the community.',
-      dataCorrelationNote: 'Commit velocity dropped sharply after semester finals. Zero unresolved architectural bugs.',
-      recommendedRevivalPath: 'Update dependencies to React 18 / Next.js 14 and redeploy free-tier serverless demo.',
-      activityTimeline: [
-        { period: 'Q1 2024', commits: 180, contributors: 4 },
-        { period: 'Q2 2024', commits: 380, contributors: 7, isPeak: true },
-        { period: 'Q3 2024', commits: 110, contributors: 3 },
-        { period: 'Q4 2024', commits: 30, contributors: 1 },
-        { period: 'Q1 2025', commits: 0, contributors: 0 }
-      ]
-    };
-  }
+export default function AutopsyChart({ report: propReport }) {
+  const defaultReport = {
+    declinePattern: 'Gradual Maintainer Roll-Off',
+    peakPeriod: 'Sprint Alpha (340 Commits)',
+    ownerStatedReason: 'Core maintainers graduated or transitioned to industry roles. Foundational architecture and modules remain intact.',
+    dataCorrelationNote: 'Commit velocity dropped sharply after release. Zero unresolved fatal vulnerabilities in core dependencies.',
+    recommendedRevivalPath: 'Update dependencies to React 18 / Next.js 14, implement final UI widgets, and redeploy on serverless free tier.',
+    activityTimeline: [
+      { period: 'Phase 1', commits: 120, contributors: 3 },
+      { period: 'Phase 2 (Peak)', commits: 340, contributors: 6, isPeak: true },
+      { period: 'Phase 3', commits: 90, contributors: 2 },
+      { period: 'Phase 4', commits: 25, contributors: 1 },
+      { period: 'Recent', commits: 0, contributors: 0 }
+    ],
+    causeOfDeclineTags: ['graduation', 'time-constraints']
+  };
 
-  const timeline = report.activityTimeline || [];
-  const maxCommits = Math.max(...timeline.map((item) => item.commits), 1);
+  const report = {
+    ...defaultReport,
+    ...(propReport || {}),
+    activityTimeline: (propReport?.activityTimeline && propReport.activityTimeline.length > 0)
+      ? propReport.activityTimeline
+      : defaultReport.activityTimeline
+  };
+
+  const timeline = report.activityTimeline;
+  const maxCommits = Math.max(1, ...(timeline.length ? timeline.map((item) => item.commits || 0) : [1]));
+
 
   return (
     <div className="sketch-card-static" style={{ padding: 24, position: 'relative' }}>
@@ -197,7 +205,7 @@ export function CauseOfDeclineTags({ tags = [] }) {
     }
   };
 
-  const tagList = tags.length > 0 ? tags : ['graduation', 'time-constraints'];
+  const tagList = Array.isArray(tags) && tags.length > 0 ? tags : ['graduation', 'time-constraints'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

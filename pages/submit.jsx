@@ -74,11 +74,20 @@ export default function SubmitProject() {
         if (res.ok) {
           const data = await res.json();
           addToast('Project listed in the Graveyard successfully!', 'success');
+          try {
+            const allProjects = getLocalProjects();
+            saveLocalProjects([data.project, ...allProjects.filter(p => p.id !== data.project.id)]);
+          } catch (e) {}
           router.push(`/project/${data.project.id}`);
           return;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          addToast(errData.error || 'Failed to list project on the server.', 'error');
+          setSubmitting(false);
+          return;
         }
-      } catch (err) {
-        // Handled in demo fallback below
+      } catch (networkErr) {
+        console.warn('Network or offline error during project submission, falling back to local storage:', networkErr.message);
       }
 
       // Demo fallback for GitHub Pages static export
